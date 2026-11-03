@@ -1,2 +1,2 @@
-# Flow-timer
+# Pom-timer
 Pomodoro timer
