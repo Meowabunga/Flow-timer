@@ -1,5 +1,272 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#090b0c"><title>Flow Timer</title><style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b0c;color:#f4f6f2;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}body{display:grid;place-items:center}.device{width:min(96vw,1100px);height:min(94dvh,680px);background:linear-gradient(135deg,#687078,#343a40 50%,#697079);border:3px solid #858b91;border-radius:clamp(22px,4vw,52px);padding:clamp(12px,2.6vw,28px);display:grid;grid-template-columns:minmax(0,1fr) clamp(78px,14vw,155px);gap:clamp(10px,2vw,25px);box-shadow:0 18px 65px #0009,inset 0 2px 4px #ffffff33}.display{background:#07090a;border:clamp(7px,1.3vw,15px) solid #242b2d;border-radius:clamp(15px,3vw,37px);display:flex;flex-direction:column;min-width:0;overflow:hidden}.phase{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1% 5%;cursor:pointer;transition:opacity .15s}.phase+.phase{border-top:2px solid #363a3b}.phase:not(.selected){opacity:.33}.tag{color:#9baca9;font-size:clamp(10px,2vw,22px);font-weight:750;letter-spacing:.24em}.digits{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:clamp(38px,10.5vmin,120px);line-height:1.08;letter-spacing:-.075em;white-space:nowrap}.controls{display:flex;flex-direction:column;align-items:center;justify-content:space-around;min-height:0}.dial{width:min(100%,23dvh);aspect-ratio:1;border-radius:50%;border:clamp(5px,1vw,11px) solid #f07d60;background:radial-gradient(circle at 40% 32%,#40484c,#22272a);box-shadow:0 7px 13px #0008,inset 0 0 0 3px #272d30;position:relative;touch-action:none;cursor:grab}.dial:active{cursor:grabbing}.dial:after{content:'';position:absolute;top:6%;left:50%;transform:translateX(-50%);width:8%;height:16%;border-radius:10px;background:#f8b09a}.ctrl{width:min(88%,17dvh);aspect-ratio:1;border:clamp(3px,.6vw,7px) solid #aab2b6;border-radius:50%;background:#333b40;color:white;font-size:clamp(27px,5vmin,56px);display:grid;place-items:center;cursor:pointer}.ctrl:active{background:#56636b}.status{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:10px;color:#8c9999;pointer-events:none}@media(orientation:portrait){.device{width:96vw;height:min(65dvh,570px);grid-template-columns:minmax(0,1fr) 17%;padding:2%;gap:2%}.digits{font-size:clamp(34px,9vw,100px)}.tag{font-size:clamp(9px,2vw,17px)}.dial{width:100%}.ctrl{width:85%}}@media(orientation:landscape){.device{width:98vw;height:96dvh}.digits{font-size:min(17dvh,11vw)}.status{display:none}}@media(max-height:340px) and (orientation:landscape){.device{padding:8px;border-radius:18px}.display{border-width:5px}.digits{font-size:16dvh}.tag{font-size:10px}.ctrl{border-width:3px}}
-</style></head><body><main class="device" aria-label="Flow Timer"><section class="display"><div class="phase selected" id="focus" role="button" tabindex="0" aria-label="Select focus timer"><div class="tag">FOCUS ◆</div><div class="digits" id="focusTime">25:00</div></div><div class="phase" id="break" role="button" tabindex="0" aria-label="Select break timer"><div class="tag">BREAK</div><div class="digits" id="breakTime">05:00</div></div></section><aside class="controls"><div class="dial" id="dial" role="slider" tabindex="0" aria-label="Turn dial to adjust selected minutes" aria-valuemin="1" aria-valuemax="180" aria-valuenow="25"></div><button class="ctrl" id="play" aria-label="Play or pause">▶</button><button class="ctrl" id="reset" aria-label="Reset selected timer">↻</button></aside></main><div class="status" id="status" aria-live="polite">Tap a timer, turn the dial, then press play</div><script>
-(()=>{'use strict';const el=id=>document.getElementById(id);const phases=['focus','break'];let duration={focus:25,break:5},remaining={focus:1500,break:300},selected='focus',running=false,deadline=0,tickId=null,audio=null;try{const s=JSON.parse(localStorage.getItem('flowTimerPrefs')||'{}');for(const p of phases)if(Number.isInteger(s[p])&&s[p]>=1&&s[p]<=180){duration[p]=s[p];remaining[p]=s[p]*60}}catch(e){}const fmt=s=>`${String(Math.floor(Math.max(0,s)/60)).padStart(2,'0')}:${String(Math.max(0,s)%60).padStart(2,'0')}`;function render(){for(const p of phases){el(p+'Time').textContent=fmt(remaining[p]);el(p).classList.toggle('selected',p===selected)}el('play').textContent=running?'Ⅱ':'▶';el('play').setAttribute('aria-label',running?'Pause':'Play');el('dial').setAttribute('aria-valuenow',duration[selected]);el('status').textContent=running?'Running '+selected:'Selected '+selected+' · '+duration[selected]+' minutes'}function save(){try{localStorage.setItem('flowTimerPrefs',JSON.stringify(duration))}catch(e){}}function select(p){if(running){sync();running=false;clearInterval(tickId)}selected=p;render()}function adjust(n){if(running){sync();running=false;clearInterval(tickId)}duration[selected]=Math.max(1,Math.min(180,duration[selected]+n));remaining[selected]=duration[selected]*60;save();render()}function unlockAudio(){try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}catch(e){}}function beep(long){if(!audio)return;const start=audio.currentTime+.06,count=long?5:2;for(let i=0;i<count;i++){const o=audio.createOscillator(),g=audio.createGain(),t=start+i*(long?.42:.28);o.type='sine';o.frequency.value=long?740:960;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.17,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+(long?.29:.16));o.connect(g).connect(audio.destination);o.start(t);o.stop(t+(long?.31:.18))}}function advance(){beep(selected==='break');selected=selected==='focus'?'break':'focus';remaining[selected]=duration[selected]*60;deadline=Date.now()+remaining[selected]*1000;render()}function sync(){if(!running)return;let left=Math.ceil((deadline-Date.now())/1000);if(left<=0){advance();left=remaining[selected]}remaining[selected]=left;render()}function toggle(){unlockAudio();if(running){sync();running=false;clearInterval(tickId)}else{running=true;deadline=Date.now()+remaining[selected]*1000;tickId=setInterval(sync,200)}render()}function reset(){running=false;clearInterval(tickId);remaining[selected]=duration[selected]*60;render()}for(const p of phases){el(p).addEventListener('click',()=>select(p));el(p).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(p)}})}el('play').addEventListener('click',toggle);el('reset').addEventListener('click',reset);let lastAngle=null,accum=0;const angle=e=>{const r=el('dial').getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI};el('dial').addEventListener('pointerdown',e=>{unlockAudio();lastAngle=angle(e);accum=0;el('dial').setPointerCapture(e.pointerId)});el('dial').addEventListener('pointermove',e=>{if(lastAngle===null)return;let a=angle(e),delta=a-lastAngle;if(delta>180)delta-=360;if(delta< -180)delta+=360;accum+=delta;lastAngle=a;const steps=Math.trunc(accum/18);if(steps){adjust(steps);accum-=steps*18}});for(const event of ['pointerup','pointercancel','lostpointercapture'])el('dial').addEventListener(event,()=>{lastAngle=null});el('dial').addEventListener('keydown',e=>{if(['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'].includes(e.key)){e.preventDefault();adjust(['ArrowUp','ArrowRight'].includes(e.key)?1:-1)}});document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});render()})();
-</script></body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#090b0c">
+<title>Flow Timer</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b0c;color:#f4f6f2;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
+body{display:grid;place-items:center}
+.device{width:min(96vw,1100px);height:min(94dvh,680px);background:linear-gradient(135deg,#687078,#343a40 50%,#697079);border:3px solid #858b91;border-radius:clamp(22px,4vw,52px);padding:clamp(12px,2.6vw,28px);display:grid;grid-template-columns:minmax(0,1fr) clamp(78px,14vw,155px);gap:clamp(10px,2vw,25px);box-shadow:0 18px 65px #0009,inset 0 2px 4px #ffffff33}
+.display{background:#07090a;border:clamp(7px,1.3vw,15px) solid #242b2d;border-radius:clamp(15px,3vw,37px);display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.phase{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1% 5%;cursor:pointer;transition:opacity .15s}
+.phase+.phase{border-top:2px solid #363a3b}
+.phase:not(.selected){opacity:.33}
+.tag{color:#9baca9;font-size:clamp(10px,2vw,22px);font-weight:750;letter-spacing:.24em}
+.digits{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:clamp(38px,10.5vmin,120px);line-height:1.08;letter-spacing:-.075em;white-space:nowrap}
+.controls{display:flex;flex-direction:column;align-items:center;justify-content:space-around;min-height:0}
+.dial{width:min(100%,23dvh);aspect-ratio:1;border-radius:50%;border:clamp(5px,1vw,11px) solid #f07d60;background:radial-gradient(circle at 40% 32%,#40484c,#22272a);box-shadow:0 7px 13px #0008,inset 0 0 0 3px #272d30;position:relative;touch-action:none;cursor:grab}
+.dial:active{cursor:grabbing}
+.dial:after{content:'';position:absolute;top:6%;left:50%;transform:translateX(-50%);width:8%;height:16%;border-radius:10px;background:#f8b09a}
+.ctrl{width:min(88%,17dvh);aspect-ratio:1;border:clamp(3px,.6vw,7px) solid #aab2b6;border-radius:50%;background:#333b40;color:white;font-size:clamp(27px,5vmin,56px);display:grid;place-items:center;cursor:pointer}
+.ctrl:active{background:#56636b}
+.preset{width:100%;border:1px solid #aab2b6;border-radius:12px;background:#20272b;color:#f4f6f2;font-weight:750;font-size:clamp(11px,2.5vmin,22px);padding:7px 2px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.preset:active{background:#45515a}
+.dialog{border:2px solid #8d999d;border-radius:20px;background:#1c2428;color:white;padding:24px;max-width:min(90vw,360px);box-shadow:0 12px 70px #000}
+.dialog::backdrop{background:#000b}
+.dialog label{display:block;margin:12px 0}
+.dialog input{width:100%;font-size:22px;padding:8px;background:#090d0f;color:white;border:1px solid #8d999d;border-radius:8px}
+.dialog button{padding:10px 18px;margin:6px;border:0;border-radius:8px;font-size:16px}
+.status{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:10px;color:#8c9999;pointer-events:none}
+@media(orientation:portrait){
+.device{width:96vw;height:min(65dvh,570px);grid-template-columns:minmax(0,1fr) 17%;padding:2%;gap:2%}
+.digits{font-size:clamp(34px,9vw,100px)}
+.tag{font-size:clamp(9px,2vw,17px)}
+.dial{width:100%}
+.ctrl{width:85%}
+}
+@media(orientation:landscape){
+.device{width:98vw;height:96dvh}
+.digits{font-size:min(17dvh,11vw)}
+.status{display:none}
+}
+@media(max-height:340px) and (orientation:landscape){
+.device{padding:8px;border-radius:18px}
+.display{border-width:5px}
+.digits{font-size:16dvh}
+.tag{font-size:10px}
+.ctrl{border-width:3px}
+}
+</style>
+</head>
+<body>
+<main class="device" aria-label="Flow Timer">
+<section class="display">
+<div class="phase selected" id="focus" role="button" tabindex="0" aria-label="Select focus timer">
+<div class="tag">FOCUS ◆</div>
+<div class="digits" id="focusTime">25:00</div>
+</div>
+<div class="phase" id="break" role="button" tabindex="0" aria-label="Select break timer">
+<div class="tag">BREAK</div>
+<div class="digits" id="breakTime">05:00</div>
+</div>
+</section>
+<aside class="controls">
+<div class="dial" id="dial" role="slider" tabindex="0" aria-label="Turn dial to adjust selected minutes" aria-valuemin="1" aria-valuemax="180" aria-valuenow="25"></div>
+<button class="ctrl" id="play" aria-label="Play or pause">▶</button>
+<button class="ctrl" id="reset" aria-label="Reset selected timer">↻</button>
+<button class="preset" id="preset" aria-label="Reset to preset durations. Long press to edit presets">25 / 5</button>
+</aside>
+</main>
+<dialog class="dialog" id="presetDialog">
+<form method="dialog" id="presetForm">
+<h2>Timer presets</h2>
+<p>Set the durations used by the preset button.</p>
+<label>Focus minutes<input id="presetFocus" type="number" inputmode="numeric" min="1" max="180" required></label>
+<label>Break minutes<input id="presetBreak" type="number" inputmode="numeric" min="1" max="180" required></label>
+<button value="cancel">Cancel</button>
+<button id="savePreset" value="save">Save</button>
+</form>
+</dialog>
+<div class="status" id="status" aria-live="polite">Tap a timer, turn the dial, then press play</div>
+<script>
+(()=>{
+'use strict';
+const el=id=>document.getElementById(id);
+const phases=['focus','break'];
+let duration={focus:25,break:5},remaining={focus:1500,break:300},selected='focus',running=false,deadline=0,tickId=null,audio=null,presets={focus:25,break:5};
+
+try{
+const s=JSON.parse(localStorage.getItem('flowTimerPrefs')||'{}');
+for(const p of phases)if(Number.isInteger(s[p])&&s[p]>=1&&s[p]<=180){
+duration[p]=s[p];remaining[p]=s[p]*60
+}
+}catch(e){}
+
+try{
+const q=JSON.parse(localStorage.getItem('flowTimerPresets')||'{}');
+for(const p of phases)if(Number.isInteger(q[p])&&q[p]>=1&&q[p]<=180)presets[p]=q[p]
+}catch(e){}
+
+const fmt=s=>`${String(Math.floor(Math.max(0,s)/60)).padStart(2,'0')}:${String(Math.max(0,s)%60).padStart(2,'0')}`;
+
+function render(){
+for(const p of phases){
+el(p+'Time').textContent=fmt(remaining[p]);
+el(p).classList.toggle('selected',p===selected)
+}
+el('preset').textContent=presets.focus+' / '+presets.break;
+el('play').textContent=running?'Ⅱ':'▶';
+el('play').setAttribute('aria-label',running?'Pause':'Play');
+el('dial').setAttribute('aria-valuenow',duration[selected]);
+el('status').textContent=running?'Running '+selected:'Selected '+selected+' · '+duration[selected]+' minutes'
+}
+
+function save(){
+try{localStorage.setItem('flowTimerPrefs',JSON.stringify(duration))}catch(e){}
+}
+
+function select(p){
+if(running){sync();running=false;clearInterval(tickId)}
+selected=p;render()
+}
+
+function adjust(n){
+if(running){sync();running=false;clearInterval(tickId)}
+duration[selected]=Math.max(1,Math.min(180,duration[selected]+n));
+remaining[selected]=duration[selected]*60;
+save();render()
+}
+
+function unlockAudio(){
+try{
+audio??=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==='suspended')audio.resume()
+}catch(e){}
+}
+
+function beep(long){
+if(!audio)return;
+const start=audio.currentTime+.06,count=long?7:4,spacing=long?.48:.43,length=long?.34:.30;
+for(let i=0;i<count;i++){
+const o=audio.createOscillator(),g=audio.createGain(),t=start+i*spacing;
+o.type='square';
+o.frequency.value=long?650:880;
+g.gain.setValueAtTime(.0001,t);
+g.gain.exponentialRampToValueAtTime(.28,t+.025);
+g.gain.setValueAtTime(.28,t+length-.055);
+g.gain.exponentialRampToValueAtTime(.0001,t+length);
+o.connect(g).connect(audio.destination);
+o.start(t);o.stop(t+length+.01)
+}
+}
+
+function advance(){
+beep(selected==='break');
+selected=selected==='focus'?'break':'focus';
+remaining[selected]=duration[selected]*60;
+deadline=Date.now()+remaining[selected]*1000;
+render()
+}
+
+function sync(){
+if(!running)return;
+let left=Math.ceil((deadline-Date.now())/1000);
+if(left<=0){advance();left=remaining[selected]}
+remaining[selected]=left;render()
+}
+
+function toggle(){
+unlockAudio();
+if(running){
+sync();running=false;clearInterval(tickId)
+}else{
+running=true;deadline=Date.now()+remaining[selected]*1000;
+tickId=setInterval(sync,200)
+}
+render()
+}
+
+function reset(){
+running=false;clearInterval(tickId);
+remaining[selected]=duration[selected]*60;render()
+}
+
+for(const p of phases){
+el(p).addEventListener('click',()=>select(p));
+el(p).addEventListener('keydown',e=>{
+if(e.key==='Enter'||e.key===' '){e.preventDefault();select(p)}
+})
+}
+
+el('play').addEventListener('click',toggle);
+el('reset').addEventListener('click',reset);
+
+function applyPreset(){
+running=false;clearInterval(tickId);selected='focus';
+for(const p of phases){duration[p]=presets[p];remaining[p]=duration[p]*60}
+save();render()
+}
+
+function editPreset(){
+el('presetFocus').value=presets.focus;
+el('presetBreak').value=presets.break;
+el('presetDialog').showModal()
+}
+
+let holdTimer=null,held=false,holdStart=null;
+const presetBtn=el('preset');
+presetBtn.addEventListener('pointerdown',e=>{
+if(e.button!==0)return;
+held=false;holdStart={x:e.clientX,y:e.clientY};
+clearTimeout(holdTimer);
+holdTimer=setTimeout(()=>{held=true;editPreset()},650)
+});
+presetBtn.addEventListener('pointermove',e=>{
+if(holdStart&&Math.hypot(e.clientX-holdStart.x,e.clientY-holdStart.y)>12)clearTimeout(holdTimer)
+});
+for(const ev of ['pointerup','pointercancel','pointerleave'])
+presetBtn.addEventListener(ev,()=>{clearTimeout(holdTimer);holdStart=null});
+presetBtn.addEventListener('contextmenu',e=>e.preventDefault());
+presetBtn.addEventListener('click',e=>{
+if(held){e.preventDefault();held=false;return}
+applyPreset()
+});
+
+el('presetForm').addEventListener('submit',e=>{
+if(e.submitter?.value!=='save')return;
+const f=Number(el('presetFocus').value),b=Number(el('presetBreak').value);
+if(!Number.isInteger(f)||!Number.isInteger(b)||f<1||b<1||f>180||b>180){
+e.preventDefault();return
+}
+presets={focus:f,break:b};
+try{localStorage.setItem('flowTimerPresets',JSON.stringify(presets))}catch(e){}
+applyPreset()
+});
+
+let lastAngle=null,accum=0;
+const angle=e=>{
+const r=el('dial').getBoundingClientRect();
+return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI
+};
+el('dial').addEventListener('pointerdown',e=>{
+unlockAudio();lastAngle=angle(e);accum=0;
+el('dial').setPointerCapture(e.pointerId)
+});
+el('dial').addEventListener('pointermove',e=>{
+if(lastAngle===null)return;
+let a=angle(e),delta=a-lastAngle;
+if(delta>180)delta-=360;
+if(delta< -180)delta+=360;
+accum+=delta;lastAngle=a;
+const steps=Math.trunc(accum/18);
+if(steps){adjust(steps);accum-=steps*18}
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])
+el('dial').addEventListener(event,()=>{lastAngle=null});
+el('dial').addEventListener('keydown',e=>{
+if(['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'].includes(e.key)){
+e.preventDefault();adjust(['ArrowUp','ArrowRight'].includes(e.key)?1:-1)
+}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+render()
+})();
+</script>
+</body>
+</html>
+
