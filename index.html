@@ -1,8 +1,654 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#101214"><title>Flow Timer</title><style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08090a;color:#fff;font-family:system-ui,-apple-system,sans-serif}body{display:grid;place-items:center}.device{--shell:#626a70;--knob:#ed8466;--grain:none;--indicator:#f6ddd2;--dial-ring:var(--knob);width:96vw;height:94dvh;display:grid;grid-template-columns:minmax(0,1fr) clamp(76px,15vw,155px);gap:clamp(8px,2vw,22px);padding:clamp(10px,2vw,24px);border:3px solid #ffffff45;border-radius:clamp(20px,4vw,45px);background-image:var(--grain),linear-gradient(125deg,#ffffff25,transparent 40%,#00000035),linear-gradient(var(--shell),var(--shell));box-shadow:inset 0 2px 5px #ffffff35,0 15px 40px #0008;position:relative}.screen{background:#07090a;border:clamp(6px,1.2vw,13px) solid #24292c;border-radius:clamp(14px,3vw,34px);display:flex;flex-direction:column;overflow:hidden;min-width:0}.phase{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1% 5%;cursor:pointer}.phase+.phase{border-top:2px solid #363a3b}.phase:not(.active){opacity:.32}.tag{font-weight:750;color:#9baca9;letter-spacing:.2em;font-size:clamp(10px,2vw,20px)}.time{font:500 clamp(35px,10vmin,120px)/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.075em;white-space:nowrap;font-variant-numeric:tabular-nums}.controls{display:flex;flex-direction:column;align-items:center;justify-content:space-around;min-height:0;padding-top:clamp(34px,6dvh,75px)}.dial{width:min(100%,23dvh);aspect-ratio:1;border-radius:50%;border:clamp(6px,1.05vw,12px) solid var(--dial-ring);background:radial-gradient(circle at 35% 30%,#4b5358,#202528);box-shadow:0 6px 13px #0008,inset 0 2px 5px #0007;position:relative;touch-action:none}.dial:after{content:"";position:absolute;top:6%;left:50%;transform:translateX(-50%);height:17%;width:8%;border-radius:8px;background:var(--indicator)}.device.gray .dial{box-shadow:0 6px 13px #0008,inset 0 0 0 2px #e8e9e755,inset 0 4px 7px #0008;outline:2px solid #747d83;outline-offset:1px}.round{width:min(88%,17dvh);aspect-ratio:1;border-radius:50%;border:clamp(3px,.6vw,7px) solid #b0b8bc;background:#343b40;color:#fff;font-size:clamp(25px,5vmin,52px)}.preset{width:100%;border:1px solid #adb5b8;border-radius:10px;background:#22292c;color:white;font-weight:700;padding:7px 0;font-size:clamp(11px,2.5vmin,20px);touch-action:manipulation;user-select:none;-webkit-user-select:none}.gear{position:absolute;right:clamp(10px,2vw,24px);top:clamp(8px,1.2vw,16px);display:grid;place-items:center;padding:0;line-height:1;background:#101519bb;border:1px solid #ffffff55;border-radius:50%;color:white;width:clamp(34px,4.2vw,48px);height:clamp(34px,4.2vw,48px);font-size:clamp(21px,2.7vw,29px);z-index:2}.gear span{display:block;transform:translateY(-1px)}.sheet{border:1px solid #748087;border-radius:18px;background:#192126;color:#fff;width:min(92vw,410px);max-height:85dvh;overflow:auto;padding:22px;box-shadow:0 15px 60px #000b}.sheet::backdrop{background:#000b}.sheet h2{margin:0 0 12px}.sheet label{display:block;margin:12px 0}.sheet input,.sheet select{width:100%;margin-top:6px;padding:9px;background:#0c1215;border:1px solid #7a878d;border-radius:8px;color:white;font-size:16px}.sheet input[type=color]{height:46px;padding:3px}.sheet button{padding:10px 16px;border:0;border-radius:8px;margin-top:10px}.help{font-size:13px;color:#bdc7cb}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(orientation:landscape){.device{width:100vw;max-width:none;height:96dvh}.time{font-size:min(17dvh,11vw)}}@media(orientation:portrait){.device{grid-template-columns:minmax(0,1fr) 18%;height:min(65dvh,570px)}.time{font-size:9vw}.dial{width:100%}.device.gray .dial{box-shadow:0 6px 13px #0008,inset 0 0 0 2px #e8e9e755,inset 0 4px 7px #0008;outline:2px solid #747d83;outline-offset:1px}.round{width:88%}}@media(max-height:340px) and (orientation:landscape){.device{padding:8px;border-radius:18px}.screen{border-width:5px}.time{font-size:16dvh}.tag{font-size:10px}.round{border-width:3px}.gear{width:25px;height:25px;font-size:15px}}
-</style></head><body><main class="device" id="device"><section class="screen"><div class="phase active" id="focus"><div class="tag">FOCUS ◆</div><div class="time" id="focusTime">25:00</div></div><div class="phase" id="break"><div class="tag">BREAK</div><div class="time" id="breakTime">05:00</div></div></section><aside class="controls"><button class="gear" id="settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button><div class="dial" id="dial" role="slider" aria-label="Adjust selected minutes" tabindex="0"></div><button class="round" id="play" aria-label="Play or pause">▶</button><button class="round" id="reset" aria-label="Reset selected timer">↻</button><button class="preset" id="preset">25 / 5</button></aside></main><dialog class="sheet" id="options"><h2>Timer appearance</h2><label>Finish<select id="finish"><option value="gray">Original gray</option><option value="solid">Custom color</option><option value="maple">Maple</option><option value="oak">Oak</option><option value="walnut">Walnut</option><option value="cherry">Cherry</option><option value="espresso">Espresso</option><option value="ebony">Ebony</option></select></label><div class="row"><label>Body color<input id="bodyColor" type="color" value="#626a70"></label><label>Knob color<input id="knobColor" type="color" value="#ed8466"></label></div><p class="help">Wood finishes use generated CSS grain, so they work offline. Body color overrides the wood tone if you switch to Custom color.</p><button id="closeOptions">Done</button></dialog><dialog class="sheet" id="presetDialog"><h2>Timer presets</h2><label>Focus minutes<input id="presetFocus" type="number" min="1" max="180" inputmode="numeric"></label><label>Break minutes<input id="presetBreak" type="number" min="1" max="180" inputmode="numeric"></label><button id="savePreset">Save</button><button id="cancelPreset">Cancel</button></dialog><script>
-(()=>{'use strict';const $=id=>document.getElementById(id),keys=['focus','break'];let mins={focus:25,break:5},left={focus:1500,break:300},presets={focus:25,break:5},selected='focus',running=false,deadline=0,interval=null,audio=null;const defaults={finish:'gray',bodyColor:'#626a70',knobColor:'#ed8466'};let skin={...defaults};function read(k,fallback){try{return JSON.parse(localStorage.getItem(k))||fallback}catch{return fallback}}function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}Object.assign(mins,read('flowTimerPrefs',{}));Object.assign(presets,read('flowTimerPresets',{}));Object.assign(skin,read('flowTimerSkin',{}));for(const k of keys){if(!Number.isInteger(mins[k])||mins[k]<1||mins[k]>180)mins[k]=25;if(!Number.isInteger(presets[k])||presets[k]<1||presets[k]>180)presets[k]=mins[k];left[k]=mins[k]*60}function render(){for(const k of keys){$(k+'Time').textContent=String(Math.floor(left[k]/60)).padStart(2,'0')+':'+String(left[k]%60).padStart(2,'0');$(k).classList.toggle('active',k===selected)}$('play').textContent=running?'Ⅱ':'▶';$('preset').textContent=presets.focus+' / '+presets.break;$('dial').setAttribute('aria-valuenow',mins[selected])}function stop(){running=false;clearInterval(interval);interval=null}function select(k){if(running){sync();stop()}selected=k;render()}function adjust(n){if(running){sync();stop()}mins[selected]=Math.max(1,Math.min(180,mins[selected]+n));left[selected]=mins[selected]*60;store('flowTimerPrefs',mins);render()}function unlock(){try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}catch{}}function sound(isBreak){if(!audio)return;const count=isBreak?7:4,step=isBreak?.48:.43,len=isBreak?.34:.3;for(let i=0;i<count;i++){let t=audio.currentTime+.05+i*step,o=audio.createOscillator(),g=audio.createGain();o.type='square';o.frequency.value=isBreak?650:880;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.28,t+.025);g.gain.setValueAtTime(.28,t+len-.055);g.gain.exponentialRampToValueAtTime(.0001,t+len);o.connect(g).connect(audio.destination);o.start(t);o.stop(t+len+.01)}}function sync(){if(!running)return;let now=Date.now(),guard=0;while(now>=deadline&&guard++<100){sound(selected==='break');selected=selected==='focus'?'break':'focus';deadline+=mins[selected]*60000}left[selected]=Math.max(0,Math.ceil((deadline-now)/1000));render()}function toggle(){unlock();if(running){sync();stop()}else{running=true;deadline=Date.now()+left[selected]*1000;interval=setInterval(sync,200)}render()}function reset(){stop();left[selected]=mins[selected]*60;render()}function applyPreset(){stop();selected='focus';for(const k of keys){mins[k]=presets[k];left[k]=mins[k]*60}store('flowTimerPrefs',mins);render()}function openPreset(){$('presetFocus').value=presets.focus;$('presetBreak').value=presets.break;$('presetDialog').showModal()}keys.forEach(k=>$(k).addEventListener('click',()=>select(k)));$('play').onclick=toggle;$('reset').onclick=reset;let hold=null,held=false,start=null;const p=$('preset');p.addEventListener('pointerdown',e=>{held=false;start=[e.clientX,e.clientY];hold=setTimeout(()=>{held=true;openPreset()},650)});p.addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start[0],e.clientY-start[1])>12)clearTimeout(hold)});['pointerup','pointercancel','pointerleave'].forEach(x=>p.addEventListener(x,()=>{clearTimeout(hold);start=null}));p.addEventListener('contextmenu',e=>e.preventDefault());p.onclick=()=>{if(held){held=false;return}applyPreset()};$('savePreset').onclick=()=>{const f=Number($('presetFocus').value),b=Number($('presetBreak').value);if(!Number.isInteger(f)||!Number.isInteger(b)||f<1||b<1||f>180||b>180)return alert('Enter 1–180 minutes');presets={focus:f,break:b};store('flowTimerPresets',presets);$('presetDialog').close();applyPreset()};$('cancelPreset').onclick=()=>$('presetDialog').close();let angle=null,acc=0;const getAngle=e=>{const r=$('dial').getBoundingClientRect();return Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)*180/Math.PI};$('dial').addEventListener('pointerdown',e=>{unlock();angle=getAngle(e);acc=0;$('dial').setPointerCapture(e.pointerId)});$('dial').addEventListener('pointermove',e=>{if(angle===null)return;let a=getAngle(e),d=a-angle;if(d>180)d-=360;if(d< -180)d+=360;acc+=d;angle=a;const steps=Math.trunc(acc/18);if(steps){adjust(steps);acc-=steps*18}});['pointerup','pointercancel','lostpointercapture'].forEach(x=>$('dial').addEventListener(x,()=>angle=null));$('dial').addEventListener('keydown',e=>{if(['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'].includes(e.key)){e.preventDefault();adjust(['ArrowUp','ArrowRight'].includes(e.key)?1:-1)}});
-const woods={maple:'#d9bb8e',oak:'#b98a54',walnut:'#6b4430',cherry:'#a25c40',espresso:'#382820',ebony:'#252527'};// Irregular flowing wood grain, embedded as a lightweight SVG (no external assets).
-const grainSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="650" height="900" viewBox="0 0 650 900"><defs><filter id="soft"><feGaussianBlur stdDeviation="1.7"/></filter></defs><g fill="none" stroke-linecap="round">${Array.from({length:42},(_,i)=>{let x=i*18-35;let d=`M ${x} -30`;for(let y=0;y<=950;y+=38){let sway=Math.sin(y/105+i*.62)*9+Math.sin(y/47+i*.33)*3+Math.sin(y/260+i*.4)*16;d+=` L ${x+sway} ${y}`;}return `<path d="${d}" stroke="${i%4===0?'#fff':'#160c08'}" stroke-opacity="${i%4===0?'.11':'.17'}" stroke-width="${i%7===0?5:1.7}"/>`}).join('')}</g><g fill="none" stroke="#130a06" stroke-opacity=".16" stroke-width="2" filter="url(#soft)"><path d="M170 -30 C220 130 135 260 177 420 S240 740 175 950"/><path d="M450 -30 C400 160 490 270 450 470 S385 790 475 950"/></g></svg>`;
-const grain='url("data:image/svg+xml,'+encodeURIComponent(grainSvg)+'")';function applySkin(){const wood=woods[skin.finish];$('device').classList.toggle('gray',skin.finish==='gray');$('device').style.setProperty('--shell',wood|| (skin.finish==='gray'?defaults.bodyColor:skin.bodyColor));$('device').style.setProperty('--grain',wood?grain:'none');$('device').style.setProperty('--knob',skin.knobColor);$('device').style.setProperty('--indicator',skin.knobColor);$('device').style.setProperty('--dial-ring',skin.finish==='gray'?'#c0c6c7':skin.knobColor);$('finish').value=skin.finish;$('bodyColor').value=skin.bodyColor;$('knobColor').value=skin.knobColor;store('flowTimerSkin',skin)}$('settings').onclick=()=>$('options').showModal();$('closeOptions').onclick=()=>$('options').close();$('finish').onchange=e=>{skin.finish=e.target.value;if(skin.finish==='gray'){skin.bodyColor=defaults.bodyColor;skin.knobColor=defaults.knobColor}applySkin()};$('bodyColor').oninput=e=>{skin.bodyColor=e.target.value;skin.finish='solid';applySkin()};$('knobColor').oninput=e=>{skin.knobColor=e.target.value;applySkin()};document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});applySkin();render()})();
-</script></body></html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#090b0c">
+<title>Flow Timer</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+--body1:#545b62;
+--body2:#363c42;
+--body3:#5b6269;
+--edge:#858b91;
+--knob:#f07d60;
+--marker:#f07d60;
+--ring1:#e0e3e2;
+--ring2:#81898b;
+--ring3:#c5cacc;
+--wood:none;
+}
+html,body{
+margin:0;width:100%;height:100%;
+overflow:hidden;background:#090b0c;
+color:#f4f6f2;
+font-family:system-ui,-apple-system,sans-serif;
+}
+body{display:grid;place-items:center}
+.device{
+position:relative;
+width:96vw;
+height:min(94dvh,680px);
+border:3px solid var(--edge);
+border-radius:clamp(22px,4vw,52px);
+background-image:var(--wood),linear-gradient(135deg,var(--body1),var(--body2) 48%,var(--body3));
+background-size:100% 100%;
+padding:clamp(12px,2.6vw,28px);
+display:grid;
+grid-template-columns:minmax(0,1fr) clamp(78px,14vw,155px);
+gap:clamp(10px,2vw,25px);
+box-shadow:inset 0 2px 5px #ffffff24,0 18px 50px #0008;
+}
+.display{
+background:#07090a;
+border:clamp(7px,1.3vw,15px) solid #242b2d;
+border-radius:clamp(15px,3vw,37px);
+display:flex;flex-direction:column;
+min-width:0;overflow:hidden;
+}
+.phase{
+flex:1;min-height:0;
+display:flex;flex-direction:column;
+justify-content:center;
+padding:1% 5%;
+cursor:pointer;
+transition:opacity .15s;
+}
+.phase+.phase{border-top:2px solid #363a3b}
+.phase:not(.selected){opacity:.33}
+.tag{
+color:#9baca9;
+font-size:clamp(10px,2vw,22px);
+font-weight:750;
+letter-spacing:.24em;
+}
+.digits{
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-variant-numeric:tabular-nums;
+font-size:clamp(38px,10.5vmin,120px);
+font-weight:500;
+line-height:1.08;
+letter-spacing:-.075em;
+white-space:nowrap;
+}
+.controls{
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:space-around;
+padding-top:7%;
+min-height:0;
+}
+.dial{
+width:min(100%,23dvh);
+aspect-ratio:1;
+border-radius:50%;
+position:relative;
+touch-action:none;
+cursor:grab;
+border:clamp(6px,1.2vw,13px) solid transparent;
+background:
+linear-gradient(#30383d,#252c30) padding-box,
+conic-gradient(from 20deg,
+var(--ring1),var(--ring2),var(--ring3),
+var(--ring1),var(--ring2),var(--ring1)) border-box;
+box-shadow:
+0 8px 14px #0008,
+inset 0 0 0 3px #11191d,
+0 0 0 3px #252c30;
+}
+.dial:active{cursor:grabbing}
+.dial:after{
+content:"";
+position:absolute;
+top:6%;left:50%;
+transform:translateX(-50%);
+width:8%;height:16%;
+border-radius:10px;
+background:var(--marker);
+box-shadow:0 0 3px #0005;
+}
+.ctrl{
+width:min(88%,17dvh);
+aspect-ratio:1;
+border:clamp(3px,.6vw,7px) solid #aab2b6;
+border-radius:50%;
+background:#333b40;
+color:white;
+font-size:clamp(27px,5vmin,56px);
+display:grid;place-items:center;
+cursor:pointer;
+}
+.ctrl:active{background:#56636b}
+.preset{
+width:100%;
+border:1px solid #aab2b6;
+border-radius:12px;
+background:#20272b;
+color:white;
+font-size:clamp(11px,2.5vmin,22px);
+font-weight:750;
+padding:7px 2px;
+touch-action:manipulation;
+user-select:none;
+-webkit-user-select:none;
+}
+.settings{
+position:absolute;
+top:2%;
+right:2%;
+width:clamp(32px,5.5vmin,65px);
+aspect-ratio:1;
+border-radius:50%;
+border:1px solid #899397;
+background:#242a2e;
+color:white;
+display:grid;
+place-items:center;
+padding:0;
+cursor:pointer;
+}
+.settings svg{width:67%;height:67%}
+.dialog{
+border:2px solid #8d999d;
+border-radius:20px;
+background:#1c2428;
+color:white;
+padding:20px;
+width:min(90vw,390px);
+max-height:90dvh;
+overflow:auto;
+box-shadow:0 12px 70px #000;
+}
+.dialog::backdrop{background:#000b}
+.dialog h2{margin:0 0 12px}
+.dialog label{display:block;margin:12px 0}
+.dialog input,.dialog select{
+width:100%;
+font-size:18px;
+padding:9px;
+background:#090d0f;
+color:white;
+border:1px solid #8d999d;
+border-radius:8px;
+}
+.dialog input[type=color]{height:48px;padding:3px}
+.dialog button{
+padding:10px 16px;
+margin:6px 4px 0 0;
+border:0;border-radius:8px;
+font-size:16px;
+}
+.status{
+position:absolute;
+bottom:3px;left:0;right:0;
+text-align:center;
+font-size:10px;
+color:#8c9999;
+pointer-events:none;
+}
+@media(orientation:portrait){
+.device{
+width:96vw;
+height:min(65dvh,570px);
+grid-template-columns:minmax(0,1fr) 17%;
+padding:2%;gap:2%;
+}
+.digits{font-size:clamp(34px,9vw,100px)}
+.tag{font-size:clamp(9px,2vw,17px)}
+.dial{width:100%}
+.ctrl{width:85%}
+}
+@media(orientation:landscape){
+html,body{
+width:100%;
+height:100%;
+margin:0;
+}
+body{display:block}
+.device{
+width:100%;
+max-width:none;
+height:100dvh;
+margin:0;
+border-radius:clamp(18px,3vw,42px);
+}
+.digits{font-size:min(17dvh,11vw)}
+.status{display:none}
+}
+@media(max-height:340px) and (orientation:landscape){
+.device{padding:8px;border-radius:18px}
+.display{border-width:5px}
+.digits{font-size:16dvh}
+.tag{font-size:10px}
+.ctrl{border-width:3px}
+}
+</style>
+</head>
+<body>
+
+<main class="device" id="device">
+<section class="display">
+<div class="phase selected" id="focus" role="button" tabindex="0">
+<div class="tag">FOCUS ◆</div>
+<div class="digits" id="focusTime">25:00</div>
+</div>
+<div class="phase" id="break" role="button" tabindex="0">
+<div class="tag">BREAK</div>
+<div class="digits" id="breakTime">05:00</div>
+</div>
+</section>
+
+<aside class="controls">
+<div class="dial" id="dial" role="slider" tabindex="0" aria-label="Adjust minutes"></div>
+<button class="ctrl" id="play" aria-label="Play or pause">▶</button>
+<button class="ctrl" id="reset" aria-label="Reset selected timer">↻</button>
+<button class="preset" id="preset">25 / 5</button>
+</aside>
+
+<button class="settings" id="settings" aria-label="Settings">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="3"/>
+<path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.56V21h-4v-.04A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.04 14H3v-4h.04A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88L4.2 7.06 7.06 4.2l.06.06A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3.04V3h4v.04A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/>
+</svg>
+</button>
+</main>
+
+<dialog class="dialog" id="settingsDialog">
+<h2>Appearance</h2>
+<label>Timer skin
+<select id="skin">
+<option value="gray">Original Gray</option>
+<option value="maple">Maple</option>
+<option value="oak">Oak</option>
+<option value="walnut">Walnut</option>
+<option value="cherry">Cherry</option>
+<option value="espresso">Espresso</option>
+<option value="ebony">Ebony</option>
+<option value="custom">Custom Color</option>
+</select>
+</label>
+<label>Custom body color
+<input type="color" id="bodyColor" value="#545b62">
+</label>
+<label>Knob ring color
+<input type="color" id="knobColor" value="#f07d60">
+</label>
+<p style="font-size:13px;color:#aab5b7">Original Gray restores the coral indicator. Wood finishes use a metallic ring, with your selected knob color applied to the indicator.</p>
+<button id="closeSettings">Done</button>
+</dialog>
+
+<dialog class="dialog" id="presetDialog">
+<form method="dialog" id="presetForm">
+<h2>Timer presets</h2>
+<label>Focus minutes
+<input id="presetFocus" type="number" min="1" max="180" required>
+</label>
+<label>Break minutes
+<input id="presetBreak" type="number" min="1" max="180" required>
+</label>
+<button value="cancel">Cancel</button>
+<button value="save">Save</button>
+</form>
+</dialog>
+
+<div class="status" id="status" aria-live="polite"></div>
+
+<script>
+(()=>{
+"use strict";
+const el=id=>document.getElementById(id);
+const phases=["focus","break"];
+const root=document.documentElement;
+
+let duration={focus:25,break:5};
+let remaining={focus:1500,break:300};
+let presets={focus:25,break:5};
+let selected="focus";
+let running=false;
+let deadline=0;
+let tickId=null;
+let audio=null;
+let skin="gray";
+let knobColor="#f07d60";
+let customBody="#545b62";
+
+function read(key){
+try{return JSON.parse(localStorage.getItem(key)||"{}")}
+catch(e){return {}}
+}
+function store(key,value){
+try{localStorage.setItem(key,JSON.stringify(value))}
+catch(e){}
+}
+
+const old=read("flowTimerPrefs");
+const savedPresets=read("flowTimerPresets");
+for(const p of phases){
+if(Number.isInteger(old[p])&&old[p]>=1&&old[p]<=180){
+duration[p]=old[p];
+remaining[p]=old[p]*60;
+}
+if(Number.isInteger(savedPresets[p])&&savedPresets[p]>=1&&savedPresets[p]<=180)
+presets[p]=savedPresets[p];
+}
+
+const appearance=read("flowTimerAppearance");
+skin=appearance.skin||"gray";
+knobColor=appearance.knob||"#f07d60";
+customBody=appearance.body||"#545b62";
+
+const woods={
+maple:["#e2cba4","#bfa27b","#987b58"],
+oak:["#c7a77a","#9e7b51","#765636"],
+walnut:["#80604b","#523a2d","#30221c"],
+cherry:["#ad6e50","#794431","#4d2a23"],
+espresso:["#574337","#30241e","#1c1513"],
+ebony:["#45403b","#252321","#131313"]
+};
+
+function grain(){
+const lines=[];
+for(let i=0;i<48;i++){
+const y=i*2.2;
+const drift=Math.sin(i*1.8)*1.5;
+const thickness=i%7===0?1.2:.35;
+const opacity=i%6===0?.16:.08;
+lines.push(
+`<path d="M-20 ${y} C 25 ${y+drift*2}, 55 ${y-drift*3}, 105 ${y+drift}" stroke="rgba(30,16,8,${opacity})" stroke-width="${thickness}" fill="none"/>`
+);
+}
+const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 105" preserveAspectRatio="none">${lines.join("")}</svg>`;
+return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+function shade(hex,amount){
+const n=parseInt(hex.slice(1),16);
+const c=[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+amount)));
+return "#"+c.map(v=>v.toString(16).padStart(2,"0")).join("");
+}
+
+function applySkin(){
+const isWood=!!woods[skin];
+if(skin==="gray"){
+root.style.setProperty("--body1","#545b62");
+root.style.setProperty("--body2","#363c42");
+root.style.setProperty("--body3","#5b6269");
+root.style.setProperty("--edge","#858b91");
+root.style.setProperty("--wood","none");
+knobColor="#f07d60";
+}else if(isWood){
+const w=woods[skin];
+root.style.setProperty("--body1",w[0]);
+root.style.setProperty("--body2",w[1]);
+root.style.setProperty("--body3",w[2]);
+root.style.setProperty("--edge",w[0]);
+root.style.setProperty("--wood",grain());
+}else{
+root.style.setProperty("--body1",shade(customBody,24));
+root.style.setProperty("--body2",shade(customBody,-18));
+root.style.setProperty("--body3",customBody);
+root.style.setProperty("--edge",shade(customBody,35));
+root.style.setProperty("--wood","none");
+}
+root.style.setProperty("--marker",knobColor);
+root.style.setProperty("--knob",knobColor);
+
+const darkWood=["walnut","espresso","ebony"].includes(skin);
+if(darkWood){
+root.style.setProperty("--ring1","#b6bbbd");
+root.style.setProperty("--ring2","#535c60");
+root.style.setProperty("--ring3","#8d969a");
+}else{
+root.style.setProperty("--ring1","#e0e3e2");
+root.style.setProperty("--ring2","#81898b");
+root.style.setProperty("--ring3","#c5cacc");
+}
+el("skin").value=skin;
+el("knobColor").value=knobColor;
+el("bodyColor").value=customBody;
+store("flowTimerAppearance",{skin,knob:knobColor,body:customBody});
+}
+
+el("settings").onclick=()=>el("settingsDialog").showModal();
+el("closeSettings").onclick=()=>el("settingsDialog").close();
+
+el("skin").onchange=e=>{
+skin=e.target.value;
+applySkin();
+};
+el("knobColor").oninput=e=>{
+knobColor=e.target.value;
+root.style.setProperty("--marker",knobColor);
+store("flowTimerAppearance",{skin,knob:knobColor,body:customBody});
+};
+el("bodyColor").oninput=e=>{
+customBody=e.target.value;
+skin="custom";
+applySkin();
+};
+
+const fmt=s=>`${String(Math.floor(Math.max(0,s)/60)).padStart(2,"0")}:${String(Math.max(0,s)%60).padStart(2,"0")}`;
+
+function render(){
+for(const p of phases){
+el(p+"Time").textContent=fmt(remaining[p]);
+el(p).classList.toggle("selected",p===selected);
+}
+el("preset").textContent=presets.focus+" / "+presets.break;
+el("play").textContent=running?"Ⅱ":"▶";
+el("dial").setAttribute("aria-valuenow",duration[selected]);
+el("status").textContent=running?"Running "+selected:"Selected "+selected;
+}
+function saveDurations(){
+store("flowTimerPrefs",duration);
+}
+function stop(){
+running=false;
+clearInterval(tickId);
+}
+function select(p){
+if(running){sync();stop()}
+selected=p;
+render();
+}
+function adjust(n){
+if(running){sync();stop()}
+duration[selected]=Math.max(1,Math.min(180,duration[selected]+n));
+remaining[selected]=duration[selected]*60;
+saveDurations();
+render();
+}
+
+function unlockAudio(){
+try{
+audio??=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==="suspended")audio.resume();
+}catch(e){}
+}
+
+function beep(long){
+if(!audio)return;
+const start=audio.currentTime+.06;
+const count=long?7:4;
+const spacing=long?.48:.43;
+const length=long?.34:.30;
+for(let i=0;i<count;i++){
+const o=audio.createOscillator();
+const g=audio.createGain();
+const t=start+i*spacing;
+o.type="square";
+o.frequency.value=long?650:880;
+g.gain.setValueAtTime(.0001,t);
+g.gain.exponentialRampToValueAtTime(.28,t+.025);
+g.gain.setValueAtTime(.28,t+length-.055);
+g.gain.exponentialRampToValueAtTime(.0001,t+length);
+o.connect(g).connect(audio.destination);
+o.start(t);
+o.stop(t+length+.01);
+}
+}
+
+function advance(){
+beep(selected==="break");
+selected=selected==="focus"?"break":"focus";
+remaining[selected]=duration[selected]*60;
+deadline=Date.now()+remaining[selected]*1000;
+render();
+}
+
+function sync(){
+if(!running)return;
+let left=Math.ceil((deadline-Date.now())/1000);
+if(left<=0){
+advance();
+left=remaining[selected];
+}
+remaining[selected]=left;
+render();
+}
+
+function toggle(){
+unlockAudio();
+if(running){
+sync();
+stop();
+}else{
+running=true;
+deadline=Date.now()+remaining[selected]*1000;
+tickId=setInterval(sync,200);
+}
+render();
+}
+
+function reset(){
+stop();
+remaining[selected]=duration[selected]*60;
+render();
+}
+
+for(const p of phases){
+el(p).onclick=()=>select(p);
+el(p).onkeydown=e=>{
+if(e.key==="Enter"||e.key===" "){
+e.preventDefault();
+select(p);
+}
+};
+}
+
+el("play").onclick=toggle;
+el("reset").onclick=reset;
+
+function applyPreset(){
+stop();
+selected="focus";
+for(const p of phases){
+duration[p]=presets[p];
+remaining[p]=duration[p]*60;
+}
+saveDurations();
+render();
+}
+
+function editPreset(){
+el("presetFocus").value=presets.focus;
+el("presetBreak").value=presets.break;
+el("presetDialog").showModal();
+}
+
+let holdTimer=null,held=false,holdStart=null;
+const presetBtn=el("preset");
+presetBtn.onpointerdown=e=>{
+if(e.button!==0)return;
+held=false;
+holdStart={x:e.clientX,y:e.clientY};
+clearTimeout(holdTimer);
+holdTimer=setTimeout(()=>{
+held=true;
+editPreset();
+},650);
+};
+presetBtn.onpointermove=e=>{
+if(holdStart&&Math.hypot(e.clientX-holdStart.x,e.clientY-holdStart.y)>12)
+clearTimeout(holdTimer);
+};
+for(const ev of ["pointerup","pointercancel","pointerleave"]){
+presetBtn.addEventListener(ev,()=>{
+clearTimeout(holdTimer);
+holdStart=null;
+});
+}
+presetBtn.oncontextmenu=e=>e.preventDefault();
+presetBtn.onclick=e=>{
+if(held){
+e.preventDefault();
+held=false;
+return;
+}
+applyPreset();
+};
+
+el("presetForm").onsubmit=e=>{
+if(e.submitter?.value!=="save")return;
+const f=Number(el("presetFocus").value);
+const b=Number(el("presetBreak").value);
+if(!Number.isInteger(f)||!Number.isInteger(b)||f<1||b<1||f>180||b>180){
+e.preventDefault();
+return;
+}
+presets={focus:f,break:b};
+store("flowTimerPresets",presets);
+applyPreset();
+};
+
+let lastAngle=null,accum=0;
+const angle=e=>{
+const r=el("dial").getBoundingClientRect();
+return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;
+};
+
+el("dial").onpointerdown=e=>{
+unlockAudio();
+lastAngle=angle(e);
+accum=0;
+el("dial").setPointerCapture(e.pointerId);
+};
+el("dial").onpointermove=e=>{
+if(lastAngle===null)return;
+let a=angle(e);
+let delta=a-lastAngle;
+if(delta>180)delta-=360;
+if(delta< -180)delta+=360;
+accum+=delta;
+lastAngle=a;
+const steps=Math.trunc(accum/18);
+if(steps){
+adjust(steps);
+accum-=steps*18;
+}
+};
+for(const event of ["pointerup","pointercancel","lostpointercapture"]){
+el("dial").addEventListener(event,()=>lastAngle=null);
+}
+el("dial").onkeydown=e=>{
+if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft"].includes(e.key)){
+e.preventDefault();
+adjust(["ArrowUp","ArrowRight"].includes(e.key)?1:-1);
+}
+};
+
+document.addEventListener("visibilitychange",()=>{
+if(!document.hidden)sync();
+});
+
+applySkin();
+render();
+})();
+</script>
+</body>
+</html>
