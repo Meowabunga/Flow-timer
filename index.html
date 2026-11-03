@@ -6,1667 +6,881 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#090b0c">
+<meta name="theme-color" content="#080a0b">
 <title>Flow Timer</title>
-
 <style>
-*{
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
-
+*{box-sizing:border-box}
 :root{
---body1:#545b62;
---body2:#363c42;
---body3:#5b6269;
---edge:#858b91;
---marker:#f07d60;
---ring1:#e0e3e2;
---ring2:#81898b;
---ring3:#c5cacc;
---wood:none;
+  --accent:#f47d60;
+  --metal:#b9c2c4;
+  --case:#555d62;
+  --grain:none;
 }
-
 html,body{
-margin:0;
-width:100%;
-height:100%;
-background:#090b0c;
-color:#f4f6f2;
-font-family:system-ui,-apple-system,sans-serif;
+  margin:0;width:100%;min-height:100%;
+  background:#080a0b;color:#f4f6f4;
+  font-family:-apple-system,BlinkMacSystemFont,
+  "Segoe UI",sans-serif;
 }
-
-body{
-overflow:hidden;
+button,input,select{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+#app{
+  width:100%;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  padding:8px;gap:10px;
 }
-
-button,input,select{
-font:inherit;
+#app.reversed{flex-direction:row-reverse}
+.timer-panel{
+  position:relative;flex:1.85;min-width:0;
+  height:min(96dvh,750px);
+  padding:12px;
+  border:3px solid #aab0b0;
+  border-radius:28px;
+  background-image:var(--grain);
+  background-color:var(--case);
+  box-shadow:inset 0 3px 9px #ffffff26,
+             inset 0 -5px 12px #0004;
+  display:flex;gap:12px;
 }
-
-button{
-cursor:pointer;
-touch-action:manipulation;
+.screen{
+  flex:1;min-width:0;
+  border:9px solid #22292c;
+  border-radius:25px;
+  background:#080a0b;
+  display:flex;flex-direction:column;
+  overflow:hidden;
 }
-
-.app{
-position:fixed;
-inset:0;
-width:100%;
-height:100%;
-height:100dvh;
-display:flex;
-align-items:center;
-justify-content:center;
-gap:clamp(8px,1.4vw,18px);
-padding:clamp(6px,1vw,12px);
-overflow:hidden;
-}
-
-/* MAIN TIMER */
-
-.device{
-position:relative;
-flex:0 1 65%;
-min-width:0;
-height:100%;
-max-height:700px;
-border:3px solid var(--edge);
-border-radius:clamp(18px,3vw,42px);
-background-image:
-var(--wood),
-linear-gradient(
-135deg,
-var(--body1),
-var(--body2) 48%,
-var(--body3)
-);
-background-size:100% 100%;
-padding:clamp(10px,1.7vw,23px);
-display:grid;
-grid-template-columns:
-minmax(0,1fr)
-clamp(65px,12vw,145px);
-gap:clamp(8px,1.5vw,20px);
-box-shadow:
-inset 0 2px 5px #ffffff24,
-0 12px 40px #0008;
-}
-
-.display{
-background:#07090a;
-border:clamp(6px,1.1vw,13px) solid #242b2d;
-border-radius:clamp(14px,2.5vw,35px);
-display:flex;
-flex-direction:column;
-min-width:0;
-overflow:hidden;
-}
-
 .phase{
-flex:1;
-min-height:0;
-display:flex;
-flex-direction:column;
-justify-content:center;
-padding:1% 5%;
-cursor:pointer;
-transition:opacity .15s;
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  padding:5%;
+  cursor:pointer;
+  opacity:.30;
 }
-
-.phase+.phase{
-border-top:2px solid #363a3b;
+.phase.active{opacity:1}
+.phase+ .phase{border-top:2px solid #1e2325}
+.phase-label{
+  color:#a6b8b5;
+  letter-spacing:.24em;
+  font-size:clamp(11px,1.6vw,19px);
+  font-weight:750;
 }
-
-.phase:not(.selected){
-opacity:.33;
-}
-
-.tag{
-color:#9baca9;
-font-size:clamp(10px,1.5vw,19px);
-font-weight:750;
-letter-spacing:.24em;
-}
-
 .digits{
-font-family:
-ui-monospace,
-SFMono-Regular,
-Menlo,
-Consolas,
-monospace;
-font-variant-numeric:tabular-nums;
-font-size:clamp(32px,7.4vw,108px);
-font-weight:500;
-line-height:1.12;
-letter-spacing:-.075em;
-white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.07em;
+  font-size:clamp(37px,7vw,105px);
+  line-height:1.2;
+  white-space:nowrap;
 }
-
 .controls{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:space-around;
-padding-top:8%;
-min-height:0;
+  width:clamp(75px,17%,125px);
+  display:flex;flex-direction:column;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 0 10px;
 }
-
-.dial{
-width:min(100%,22dvh);
-aspect-ratio:1;
-border-radius:50%;
-position:relative;
-touch-action:none;
-cursor:grab;
-border:clamp(5px,1vw,12px) solid transparent;
-background:
-linear-gradient(#30383d,#252c30) padding-box,
-conic-gradient(
-from 20deg,
-var(--ring1),
-var(--ring2),
-var(--ring3),
-var(--ring1),
-var(--ring2),
-var(--ring1)
-) border-box;
-box-shadow:
-0 8px 14px #0008,
-inset 0 0 0 3px #11191d,
-0 0 0 3px #252c30;
-}
-
-.dial:after{
-content:"";
-position:absolute;
-top:6%;
-left:50%;
-transform:translateX(-50%);
-width:8%;
-height:16%;
-border-radius:10px;
-background:var(--marker);
-}
-
-.ctrl{
-width:min(88%,16dvh);
-aspect-ratio:1;
-border:clamp(3px,.6vw,7px) solid #aab2b6;
-border-radius:50%;
-background:#333b40;
-color:white;
-font-size:clamp(24px,4.5vmin,52px);
-display:grid;
-place-items:center;
-padding:0;
-}
-
-.ctrl:active{
-background:#56636b;
-}
-
-.preset{
-width:100%;
-border:1px solid #aab2b6;
-border-radius:12px;
-background:#20272b;
-color:white;
-font-size:clamp(11px,2vw,20px);
-font-weight:750;
-padding:8px 2px;
-user-select:none;
--webkit-user-select:none;
-}
-
-/* WEATHER DASHBOARD */
-
-.dashboard{
-flex:1 1 35%;
-min-width:0;
-height:100%;
-max-height:700px;
-background:
-linear-gradient(145deg,#20282b,#101518);
-border:2px solid #454e51;
-border-radius:clamp(16px,2.5vw,34px);
-padding:clamp(12px,2vw,26px);
-display:flex;
-flex-direction:column;
-justify-content:space-between;
-overflow:auto;
-scrollbar-width:none;
-}
-
-.dashboard::-webkit-scrollbar{
-display:none;
-}
-
-.date{
-font-size:clamp(12px,1.8vw,21px);
-font-weight:700;
-letter-spacing:.15em;
-color:#a9b5b4;
-}
-
-.clock{
-font-size:clamp(24px,4vw,57px);
-font-weight:550;
-font-variant-numeric:tabular-nums;
-letter-spacing:-.04em;
-white-space:nowrap;
-}
-
-.clock small{
-font-size:.42em;
-letter-spacing:0;
-color:#a9b5b4;
-}
-
-.separator{
-height:1px;
-background:#394246;
-margin:12px 0;
-flex-shrink:0;
-}
-
-.weather-location{
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:5px;
-font-size:clamp(12px,1.5vw,19px);
-font-weight:650;
-}
-
-.location-name{
-overflow:hidden;
-text-overflow:ellipsis;
-white-space:nowrap;
-}
-
-.location-controls{
-display:flex;
-align-items:center;
-gap:5px;
-}
-
-.small-btn{
-background:#303b40;
-border:1px solid #67757a;
-color:white;
-border-radius:9px;
-padding:5px 9px;
-font-size:clamp(12px,1.4vw,18px);
-}
-
-.weather-main{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-gap:8px;
-flex:1;
-min-height:0;
-}
-
-.weather-icon{
-font-size:clamp(40px,6vw,85px);
-line-height:1.1;
-}
-
-.current-temp{
-font-size:clamp(20px,3.2vw,43px);
-font-weight:600;
-text-align:center;
-}
-
-.conditions{
-font-size:clamp(11px,1.4vw,17px);
-color:#aab5b7;
-text-align:center;
-}
-
-.forecast{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:8px;
-}
-
-.forecast-item{
-background:#20292d;
-border:1px solid #39464b;
-border-radius:12px;
-padding:clamp(7px,1.2vw,14px);
-text-align:center;
-}
-
-.forecast-label{
-color:#aab5b7;
-font-size:clamp(10px,1.3vw,15px);
-margin-bottom:5px;
-}
-
-.forecast-temp{
-font-size:clamp(12px,1.8vw,22px);
-font-weight:650;
-overflow-wrap:anywhere;
-}
-
-.weather-note{
-font-size:10px;
-color:#8f9b9f;
-text-align:center;
-margin-top:8px;
-}
-
-/* SETTINGS */
-
 .settings{
-position:absolute;
-top:2%;
-right:2%;
-width:clamp(28px,4vw,52px);
-aspect-ratio:1;
-border-radius:50%;
-border:1px solid #899397;
-background:#242a2e;
-color:white;
-display:grid;
-place-items:center;
-padding:0;
-z-index:2;
+  align-self:flex-end;
+  border:1px solid #879397;
+  background:#222a2e;color:white;
+  border-radius:50%;
+  width:36px;height:36px;
+  font-size:22px;
 }
-
-.settings svg{
-width:65%;
-height:65%;
+.control-stack{
+  width:100%;
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(20px,5dvh,48px);
+  padding-top:22px;
 }
-
-.dialog{
-border:2px solid #8d999d;
-border-radius:20px;
-background:#1c2428;
-color:white;
-padding:20px;
-width:min(92vw,420px);
-max-height:88dvh;
-overflow:auto;
-box-shadow:0 12px 70px #000;
+.knob{
+  position:relative;
+  width:100%;aspect-ratio:1;
+  border-radius:50%;
+  border:clamp(5px,1.2vw,10px) solid var(--metal);
+  background:radial-gradient(circle at 35% 30%,
+    #404b50,#252d31 75%);
+  box-shadow:0 5px 9px #0006,
+             inset 0 0 0 4px #172024;
+  touch-action:none;
 }
-
-.dialog::backdrop{
-background:#000c;
+.knob-mark{
+  position:absolute;
+  width:8%;height:17%;
+  background:var(--accent);
+  border-radius:9px;
+  left:46%;top:7%;
+  transform-origin:50% 250%;
 }
-
-.dialog h2{
-margin:0 0 12px;
+.round{
+  width:78%;aspect-ratio:1;
+  border:5px solid #aab6b9;
+  border-radius:50%;
+  background:#303a3f;color:white;
+  font-size:clamp(22px,3vw,37px);
+  display:grid;place-items:center;
 }
-
-.dialog h3{
-margin:20px 0 8px;
+.round:active,.preset:active{filter:brightness(1.3)}
+.preset{
+  width:100%;min-height:38px;
+  border:1.5px solid #aeb9bc;
+  border-radius:14px;
+  background:#222b2f;color:white;
+  font-size:clamp(12px,1.5vw,18px);
+  font-weight:750;
+  padding:5px 2px;
 }
-
-.dialog label{
-display:block;
-margin:12px 0;
+.info-panel{
+  flex:1;min-width:0;
+  height:min(96dvh,750px);
+  padding:20px;
+  border:3px solid #404b50;
+  border-radius:27px;
+  background:linear-gradient(145deg,#20292d,#111719);
+  display:flex;flex-direction:column;
 }
-
-.dialog input,
-.dialog select{
-width:100%;
-font-size:17px;
-padding:9px;
-background:#090d0f;
-color:white;
-border:1px solid #8d999d;
-border-radius:8px;
+.info-header{
+  display:flex;align-items:flex-start;
+  justify-content:space-between;gap:10px;
 }
-
-.dialog input[type=color]{
-height:48px;
-padding:3px;
+.date{
+  color:#aab9b7;letter-spacing:.16em;
+  font-weight:750;font-size:clamp(12px,1.7vw,21px);
 }
-
-.dialog button{
-padding:10px 15px;
-margin:5px 4px 0 0;
-border:0;
-border-radius:8px;
-font-size:15px;
-background:#d8dfe0;
-color:#151a1d;
-}
-
-.dialog .secondary{
-background:#394449;
-color:white;
-}
-
-.saved-city{
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:8px;
-padding:7px 0;
-border-bottom:1px solid #394449;
-}
-
-.saved-city button{
-flex-shrink:0;
-}
-
-.hint{
-font-size:12px;
-color:#aab5b7;
-line-height:1.5;
-}
-
-/* RESPONSIVE */
-
-@media(min-width:1000px){
-.device{
-flex-basis:65%;
-}
-.dashboard{
-flex-basis:35%;
-}
-}
-
-@media(max-width:650px) and (orientation:portrait){
-.app{
-flex-direction:column;
-gap:8px;
-padding:6px;
-}
-
-.device{
-width:100%;
-flex:1 1 64%;
-max-height:none;
-grid-template-columns:minmax(0,1fr) 18%;
-gap:2%;
-padding:2%;
-}
-
-.dashboard{
-width:100%;
-flex:1 1 36%;
-max-height:none;
-padding:12px;
-}
-
-.digits{
-font-size:clamp(31px,9vw,70px);
-}
-
-.dial{
-width:100%;
-}
-
-.ctrl{
-width:85%;
-}
-
-.weather-main{
-flex-direction:row;
-flex-wrap:wrap;
-}
-
-.weather-icon{
-font-size:36px;
-}
-
-.current-temp{
-font-size:24px;
-}
-
 .clock{
-font-size:29px;
+  font-size:clamp(27px,4vw,49px);
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
 }
+.ampm{font-size:.42em;color:#b3bec0;font-weight:400}
+.swap{
+  flex-shrink:0;
+  width:42px;height:42px;
+  border:1.5px solid #59666b;
+  border-radius:50%;
+  background:#293338;
+  color:#b4c0c2;
+  font-size:23px;
 }
-
-@media(max-height:430px) and (orientation:landscape){
-.device{
-padding:8px;
-border-radius:18px;
+.rule{height:2px;background:#354145;margin:20px 0}
+.locations{
+  display:flex;align-items:center;gap:5px;
 }
-
-.display{
-border-width:5px;
+.location-name{
+  flex:1;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(13px,1.7vw,20px);
+  font-weight:650;
 }
-
-.digits{
-font-size:min(15dvh,7vw);
+.small-btn{
+  width:32px;height:34px;flex-shrink:0;
+  border:1.5px solid #6d7e83;
+  border-radius:11px;
+  background:#2b383d;color:#e5eded;
+  font-size:20px;
 }
-
-.tag{
-font-size:10px;
+.weather-center{
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;gap:12px;
 }
-
-.controls{
-padding-top:4%;
+.weather-icon{font-size:clamp(37px,5vw,65px)}
+.temp{
+  font-size:clamp(21px,2.8vw,37px);
+  font-weight:750;
 }
-
-.dial{
-width:min(100%,20dvh);
+.condition{color:#a8b7b8;font-size:clamp(12px,1.6vw,19px)}
+.forecast{display:flex;gap:10px}
+.forecast-box{
+  flex:1;min-width:0;
+  padding:12px 5px;
+  border:1.5px solid #3b4c51;
+  border-radius:17px;
+  background:#202b30;
+  text-align:center;
 }
-
-.ctrl{
-width:min(85%,15dvh);
+.forecast-label{color:#a8b7b9;font-size:13px}
+.forecast-value{
+  font-size:clamp(13px,1.6vw,20px);
+  font-weight:700;margin-top:8px;
 }
-
-.dashboard{
-padding:10px;
+.updated{
+  text-align:center;color:#98a8aa;
+  font-size:12px;margin-top:12px;
 }
-
-.weather-icon{
-font-size:35px;
+.modal{
+  display:none;position:fixed;inset:0;
+  z-index:20;background:#000b;
+  align-items:center;justify-content:center;
+  padding:16px;
 }
-
-.current-temp{
-font-size:20px;
+.modal.open{display:flex}
+.modal-card{
+  width:min(430px,100%);
+  max-height:85dvh;overflow:auto;
+  background:#20292d;border:1px solid #667479;
+  border-radius:20px;padding:22px;
 }
-
-.separator{
-margin:5px 0;
+.modal-card h2{margin-top:0}
+.field{margin:14px 0}
+.field label{display:block;margin-bottom:6px;color:#c1cbcc}
+.field input,.field select{
+  width:100%;padding:10px;
+  background:#101719;color:white;
+  border:1px solid #607076;border-radius:9px;
 }
+.action{
+  border:1px solid #819094;border-radius:10px;
+  background:#344248;color:white;
+  padding:10px 15px;margin:5px 5px 5px 0;
+}
+.hint{color:#9daeb0;font-size:12px}
+@media(max-aspect-ratio:1/1){
+  #app{
+    flex-direction:column;
+    justify-content:flex-start;
+    padding:8px;
+  }
+  #app.reversed{flex-direction:column-reverse}
+  .timer-panel,.info-panel{
+    flex:none;width:100%;
+    height:auto;
+  }
+  .timer-panel{height:min(65dvh,620px)}
+  .info-panel{height:min(44dvh,420px)}
+  .digits{font-size:clamp(35px,10vw,85px)}
+  .phase-label{font-size:clamp(12px,3vw,18px)}
+  .controls{width:20%}
+  .control-stack{gap:clamp(14px,3dvh,32px)}
+  .weather-center{gap:5px}
+  .weather-icon{font-size:35px}
+  .rule{margin:10px 0}
+  .info-panel{padding:14px}
+}
+@media(max-width:390px) and (orientation:portrait){
+  .digits{font-size:clamp(32px,9vw,54px)}
+  .round{border-width:3px}
 }
 </style>
 </head>
-
 <body>
-
-<div class="app">
-
-<main class="device" id="device">
-
-<section class="display">
-
-<div class="phase selected"
-id="focus"
-role="button"
-tabindex="0">
-<div class="tag">FOCUS ◆</div>
-<div class="digits" id="focusTime">25:00</div>
+<div id="app">
+  <section class="timer-panel" id="timerPanel">
+    <div class="screen">
+      <div class="phase active" id="focusPhase">
+        <div class="phase-label">FOCUS ◆</div>
+        <div class="digits" id="focusTime">25:00</div>
+      </div>
+      <div class="phase" id="breakPhase">
+        <div class="phase-label">BREAK</div>
+        <div class="digits" id="breakTime">05:00</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="settings" id="settingsBtn" aria-label="Settings">⚙</button>
+      <div class="control-stack">
+        <div class="knob" id="knob" role="slider"
+             aria-label="Adjust selected minutes">
+          <div class="knob-mark" id="knobMark"></div>
+        </div>
+        <button class="round" id="playBtn" aria-label="Play or pause">▶</button>
+        <button class="round" id="resetBtn" aria-label="Reset selected timer">↻</button>
+      </div>
+      <button class="preset" id="presetBtn">25 / 5</button>
+    </div>
+  </section>
+  <section class="info-panel" id="infoPanel">
+    <div class="info-header">
+      <div>
+        <div class="date" id="dateText"></div>
+        <div class="clock" id="clockText"></div>
+      </div>
+      <button class="swap" id="swapBtn" title="Swap panels"
+              aria-label="Swap timer and weather positions">⇄</button>
+    </div>
+    <div class="rule"></div>
+    <div class="locations">
+      <div class="location-name" id="locationName">Current Location</div>
+      <button class="small-btn" id="prevLocation">‹</button>
+      <button class="small-btn" id="nextLocation">›</button>
+      <button class="small-btn" id="addLocation">+</button>
+    </div>
+    <div class="weather-center">
+      <div class="weather-icon" id="weatherIcon">☁️</div>
+      <div class="temp" id="currentTemp">Loading…</div>
+      <div class="condition" id="condition"></div>
+    </div>
+    <div class="forecast">
+      <div class="forecast-box">
+        <div class="forecast-label">LOW</div>
+        <div class="forecast-value" id="lowTemp">--</div>
+      </div>
+      <div class="forecast-box">
+        <div class="forecast-label">HIGH</div>
+        <div class="forecast-value" id="highTemp">--</div>
+      </div>
+    </div>
+    <div class="updated" id="updatedText"></div>
+  </section>
 </div>
 
-<div class="phase"
-id="break"
-role="button"
-tabindex="0">
-<div class="tag">BREAK</div>
-<div class="digits" id="breakTime">05:00</div>
+<div class="modal" id="settingsModal">
+  <div class="modal-card">
+    <h2>Timer settings</h2>
+    <div class="field">
+      <label>Case finish</label>
+      <select id="finishSelect">
+        <option value="gray">Original gray</option>
+        <option value="oak">Light oak</option>
+        <option value="maple">Maple</option>
+        <option value="walnut">Walnut</option>
+        <option value="mahogany">Mahogany</option>
+        <option value="ebony">Ebony</option>
+        <option value="custom">Custom color</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Custom case color</label>
+      <input type="color" id="caseColor" value="#555d62">
+    </div>
+    <div class="field">
+      <label>Knob metal</label>
+      <select id="metalSelect">
+        <option value="auto">Match finish</option>
+        <option value="silver">Silver</option>
+        <option value="dark">Dark silver</option>
+        <option value="black">Black</option>
+        <option value="orange">Orange</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Knob indicator color</label>
+      <input type="color" id="accentColor" value="#f47d60">
+    </div>
+    <div class="field">
+      <label>Temperature units</label>
+      <select id="unitSelect">
+        <option value="both">Both °F (°C)</option>
+        <option value="f">Fahrenheit</option>
+        <option value="c">Celsius</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>
+        <input type="checkbox" id="repeatCheck">
+        Automatically repeat focus and break
+      </label>
+    </div>
+    <div class="field">
+      <label>Panel order</label>
+      <button class="action" id="swapSettings">Swap panels</button>
+    </div>
+    <button class="action" id="closeSettings">Done</button>
+  </div>
 </div>
 
-</section>
-
-<aside class="controls">
-
-<div class="dial"
-id="dial"
-role="slider"
-tabindex="0"
-aria-label="Adjust timer minutes"
-aria-valuemin="1"
-aria-valuemax="180">
+<div class="modal" id="presetModal">
+  <div class="modal-card">
+    <h2>Reset preset</h2>
+    <div class="field">
+      <label>Focus minutes</label>
+      <input id="presetFocus" type="number" min="1" max="180">
+    </div>
+    <div class="field">
+      <label>Break minutes</label>
+      <input id="presetBreak" type="number" min="1" max="180">
+    </div>
+    <button class="action" id="savePreset">Save preset</button>
+    <button class="action" id="cancelPreset">Cancel</button>
+  </div>
 </div>
 
-<button class="ctrl" id="play"
-aria-label="Play or pause">▶</button>
-
-<button class="ctrl" id="reset"
-aria-label="Reset selected timer">↻</button>
-
-<button class="preset" id="preset"
-aria-label="Apply preset; hold to edit">
-25 / 5
-</button>
-
-</aside>
-
-<button class="settings"
-id="settings"
-aria-label="Settings">
-
-<svg viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-stroke-width="2"
-stroke-linecap="round"
-stroke-linejoin="round">
-<circle cx="12" cy="12" r="3"/>
-<path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.56V21h-4v-.04A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.04 14H3v-4h.04A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88L4.2 7.06 7.06 4.2l.06.06A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3.04V3h4v.04A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/>
-</svg>
-
-</button>
-
-</main>
-
-<!-- WEATHER PANEL -->
-
-<aside class="dashboard">
-
-<div>
-<div class="date" id="date">MON 11/02</div>
-<div class="clock" id="clock">--:--</div>
+<div class="modal" id="locationModal">
+  <div class="modal-card">
+    <h2>Add weather location</h2>
+    <div class="field">
+      <label>City name</label>
+      <input id="cityInput" placeholder="Vancouver, BC">
+    </div>
+    <button class="action" id="saveLocation">Find city</button>
+    <button class="action" id="removeLocation">Remove selected city</button>
+    <button class="action" id="closeLocation">Close</button>
+    <div class="hint" id="locationMessage"></div>
+  </div>
 </div>
-
-<div class="separator"></div>
-
-<div class="weather-location">
-<span class="location-name" id="locationName">
-Current Location
-</span>
-
-<div class="location-controls">
-<button class="small-btn" id="prevCity"
-aria-label="Previous location">‹</button>
-<button class="small-btn" id="nextCity"
-aria-label="Next location">›</button>
-<button class="small-btn" id="addCity"
-aria-label="Add city">+</button>
-</div>
-</div>
-
-<div class="weather-main">
-<div class="weather-icon" id="weatherIcon">☀️</div>
-<div class="current-temp" id="currentTemp">--</div>
-<div class="conditions" id="conditions">
-Loading weather...
-</div>
-</div>
-
-<div class="forecast">
-<div class="forecast-item">
-<div class="forecast-label">LOW</div>
-<div class="forecast-temp" id="lowTemp">--</div>
-</div>
-<div class="forecast-item">
-<div class="forecast-label">HIGH</div>
-<div class="forecast-temp" id="highTemp">--</div>
-</div>
-</div>
-
-<div class="weather-note" id="weatherNote">
-Weather updates approximately every 30 minutes
-</div>
-
-</aside>
-
-</div>
-
-<!-- SETTINGS DIALOG -->
-
-<dialog class="dialog" id="settingsDialog">
-
-<h2>Flow Timer Settings</h2>
-
-<h3>Appearance</h3>
-
-<label>Timer skin
-<select id="skin">
-<option value="gray">Original Gray</option>
-<option value="maple">Maple</option>
-<option value="oak">Oak</option>
-<option value="walnut">Walnut</option>
-<option value="cherry">Cherry</option>
-<option value="espresso">Espresso</option>
-<option value="ebony">Ebony</option>
-<option value="custom">Custom Color</option>
-</select>
-</label>
-
-<label>Custom body color
-<input type="color" id="bodyColor" value="#545b62">
-</label>
-
-<label>Knob indicator color
-<input type="color" id="knobColor" value="#f07d60">
-</label>
-
-<h3>Weather</h3>
-
-<label>Temperature units
-<select id="units">
-<option value="f">Fahrenheit</option>
-<option value="c">Celsius</option>
-<option value="both">Both — °F (°C)</option>
-</select>
-</label>
-
-<label>Saved locations</label>
-<div id="savedCities"></div>
-
-<p class="hint">
-Current Location is always available.
-Location access must be enabled to use it.
-</p>
-
-<button id="manageAddCity">Add city</button>
-<button id="refreshWeather" class="secondary">
-Refresh weather
-</button>
-
-<div>
-<button id="closeSettings">Done</button>
-</div>
-
-</dialog>
-
-<!-- ADD CITY -->
-
-<dialog class="dialog" id="cityDialog">
-
-<h2>Add weather location</h2>
-
-<label>City name
-<input id="cityInput"
-type="text"
-placeholder="e.g. Vancouver, BC"
-autocomplete="off">
-</label>
-
-<p class="hint">
-Search for a city and choose from the matching locations.
-</p>
-
-<button id="searchCity">Search</button>
-<button id="cancelCity" class="secondary">Cancel</button>
-
-<div id="cityResults"></div>
-
-</dialog>
-
-<!-- PRESET EDITOR -->
-
-<dialog class="dialog" id="presetDialog">
-
-<form method="dialog" id="presetForm">
-
-<h2>Timer presets</h2>
-
-<label>Focus minutes
-<input id="presetFocus"
-type="number"
-min="1"
-max="180"
-required>
-</label>
-
-<label>Break minutes
-<input id="presetBreak"
-type="number"
-min="1"
-max="180"
-required>
-</label>
-
-<button value="cancel">Cancel</button>
-<button value="save">Save</button>
-
-</form>
-</dialog>
 
 <script>
-(()=>{
 "use strict";
-
-const el=id=>document.getElementById(id);
-const root=document.documentElement;
-const phases=["focus","break"];
-
-function read(key){
-try{
-return JSON.parse(localStorage.getItem(key)||"{}");
-}catch(e){
-return {};
-}
-}
-
-function store(key,value){
-try{
-localStorage.setItem(key,JSON.stringify(value));
-}catch(e){}
-}
-
-/* TIMER STATE */
-
-let duration={focus:25,break:5};
-let remaining={focus:1500,break:300};
-let presets={focus:25,break:5};
-let selected="focus";
-let running=false;
-let deadline=0;
-let tickId=null;
-let audio=null;
-
-const old=read("flowTimerPrefs");
-const oldPresets=read("flowTimerPresets");
-
-for(const p of phases){
-if(Number.isInteger(old[p])&&old[p]>=1&&old[p]<=180){
-duration[p]=old[p];
-remaining[p]=old[p]*60;
-}
-if(Number.isInteger(oldPresets[p])&&oldPresets[p]>=1&&oldPresets[p]<=180){
-presets[p]=oldPresets[p];
-}
-}
-
-const fmt=s=>{
-s=Math.max(0,Math.floor(s));
-return String(Math.floor(s/60)).padStart(2,"0")
-+":"+String(s%60).padStart(2,"0");
+const $=id=>document.getElementById(id);
+const storeKey="flowTimerSettingsV8";
+const defaults={
+  focus:25,break:5,
+  presetFocus:25,presetBreak:5,
+  selected:"focus",running:false,
+  repeat:true,reversed:false,
+  finish:"gray",metal:"auto",
+  accent:"#f47d60",customCase:"#555d62",
+  units:"both",locations:[],locationIndex:0
 };
+let saved={};
+try{saved=JSON.parse(localStorage.getItem(storeKey)||"{}")}
+catch(e){}
+let state={...defaults,...saved,running:false};
+state.focus=Math.max(1,Number(state.focus)||25);
+state.break=Math.max(1,Number(state.break)||5);
+let remaining={
+  focus:state.focus*60,
+  break:state.break*60
+};
+let deadline=null;
+let audioContext=null;
+let weatherCache={};
+let lastWeatherFetch=0;
 
-function render(){
-for(const p of phases){
-el(p+"Time").textContent=fmt(remaining[p]);
-el(p).classList.toggle("selected",p===selected);
+function persist(){
+  const copy={...state,running:false};
+  localStorage.setItem(storeKey,JSON.stringify(copy));
 }
-
-el("play").textContent=running?"Ⅱ":"▶";
-el("play").setAttribute("aria-label",running?"Pause":"Play");
-el("preset").textContent=presets.focus+" / "+presets.break;
-el("dial").setAttribute("aria-valuenow",duration[selected]);
+function formatTime(seconds){
+  seconds=Math.max(0,Math.ceil(seconds));
+  const m=Math.floor(seconds/60);
+  const s=seconds%60;
+  return String(m).padStart(2,"0")+":"+
+         String(s).padStart(2,"0");
 }
-
-function stop(){
-running=false;
-clearInterval(tickId);
-tickId=null;
+function renderTimer(){
+  $("focusTime").textContent=formatTime(remaining.focus);
+  $("breakTime").textContent=formatTime(remaining.break);
+  $("focusPhase").classList.toggle("active",state.selected==="focus");
+  $("breakPhase").classList.toggle("active",state.selected==="break");
+  $("playBtn").textContent=state.running?"Ⅱ":"▶";
+  $("presetBtn").textContent=
+    state.presetFocus+" / "+state.presetBreak;
+  const max=180;
+  const mins=remaining[state.selected]/60;
+  const angle=Math.min(1,mins/max)*300-150;
+  $("knobMark").style.transform="rotate("+angle+"deg)";
 }
-
-function select(p){
-if(running){
-sync();
-stop();
+function selectPhase(phase){
+  if(state.running)pause();
+  state.selected=phase;
+  persist();renderTimer();
 }
-selected=p;
-render();
-}
-
-function adjust(n){
-if(running){
-sync();
-stop();
-}
-duration[selected]=Math.max(
-1,Math.min(180,duration[selected]+n)
-);
-remaining[selected]=duration[selected]*60;
-store("flowTimerPrefs",duration);
-render();
-}
+$("focusPhase").onclick=()=>selectPhase("focus");
+$("breakPhase").onclick=()=>selectPhase("break");
 
 function unlockAudio(){
-try{
-audio??=new(window.AudioContext||window.webkitAudioContext)();
-if(audio.state==="suspended")audio.resume();
-}catch(e){}
+  try{
+    audioContext ||= new (window.AudioContext||
+      window.webkitAudioContext)();
+    if(audioContext.state==="suspended")audioContext.resume();
+  }catch(e){}
 }
-
-function beep(isBreak){
-if(!audio)return;
-
-const start=audio.currentTime+.06;
-const count=isBreak?7:5;
-const spacing=isBreak?.48:.43;
-const length=isBreak?.34:.30;
-
-for(let i=0;i<count;i++){
-const o=audio.createOscillator();
-const g=audio.createGain();
-const t=start+i*spacing;
-
-o.type="square";
-o.frequency.value=isBreak?650:880;
-
-g.gain.setValueAtTime(.0001,t);
-g.gain.exponentialRampToValueAtTime(.28,t+.025);
-g.gain.setValueAtTime(.28,t+length-.055);
-g.gain.exponentialRampToValueAtTime(.0001,t+length);
-
-o.connect(g).connect(audio.destination);
-o.start(t);
-o.stop(t+length+.01);
+function beep(long=false){
+  if(!audioContext)return;
+  const start=audioContext.currentTime+.03;
+  const count=long?5:3;
+  const duration=long?.36:.24;
+  for(let i=0;i<count;i++){
+    const osc=audioContext.createOscillator();
+    const gain=audioContext.createGain();
+    osc.type="sine";
+    osc.frequency.value=long?680:880;
+    const t=start+i*(duration+.12);
+    gain.gain.setValueAtTime(.0001,t);
+    gain.gain.exponentialRampToValueAtTime(.35,t+.025);
+    gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    osc.connect(gain).connect(audioContext.destination);
+    osc.start(t);osc.stop(t+duration+.02);
+  }
 }
+function play(){
+  unlockAudio();
+  if(remaining[state.selected]<=0)
+    remaining[state.selected]=state[state.selected]*60;
+  state.running=true;
+  deadline=Date.now()+remaining[state.selected]*1000;
+  renderTimer();
 }
-
-function advance(){
-beep(selected==="break");
-
-selected=selected==="focus"?"break":"focus";
-remaining[selected]=duration[selected]*60;
-deadline=Date.now()+remaining[selected]*1000;
-
-render();
+function pause(){
+  if(!state.running)return;
+  remaining[state.selected]=Math.max(0,
+    (deadline-Date.now())/1000);
+  state.running=false;deadline=null;
+  renderTimer();
 }
-
-function sync(){
-if(!running)return;
-
-let left=Math.ceil((deadline-Date.now())/1000);
-let transitions=0;
-
-// Keep elapsed time accurate even after the app
-// has been temporarily suspended.
-while(left<=0&&transitions<100){
-const overshoot=-left;
-advance();
-deadline-=overshoot*1000;
-left=Math.ceil((deadline-Date.now())/1000);
-transitions++;
+function phaseComplete(){
+  const finished=state.selected;
+  remaining[finished]=0;
+  beep(finished==="break");
+  state.running=false;
+  const next=finished==="focus"?"break":"focus";
+  if(finished==="focus"||state.repeat){
+    state.selected=next;
+    if(remaining[next]<=0)
+      remaining[next]=state[next]*60;
+    play();
+  }
+  persist();renderTimer();
 }
-
-if(transitions>=100){
-deadline=Date.now()+duration[selected]*60000;
-left=duration[selected]*60;
-}
-
-remaining[selected]=Math.max(0,left);
-render();
-}
-
-function toggle(){
-unlockAudio();
-
-if(running){
-sync();
-stop();
-}else{
-running=true;
-deadline=Date.now()+remaining[selected]*1000;
-tickId=setInterval(sync,200);
-}
-
-render();
-}
-
-function reset(){
-stop();
-remaining[selected]=duration[selected]*60;
-render();
-}
-
-for(const p of phases){
-el(p).onclick=()=>select(p);
-el(p).onkeydown=e=>{
-if(e.key==="Enter"||e.key===" "){
-e.preventDefault();
-select(p);
-}
+setInterval(()=>{
+  if(!state.running)return;
+  remaining[state.selected]=Math.max(0,
+    (deadline-Date.now())/1000);
+  if(remaining[state.selected]<=0)phaseComplete();
+  else renderTimer();
+},200);
+$("playBtn").onclick=()=>{
+  if(state.running)pause();else play();
 };
-}
-
-el("play").onclick=toggle;
-el("reset").onclick=reset;
-
-function applyPreset(){
-stop();
-selected="focus";
-
-for(const p of phases){
-duration[p]=presets[p];
-remaining[p]=duration[p]*60;
-}
-
-store("flowTimerPrefs",duration);
-render();
-}
-
-function editPreset(){
-el("presetFocus").value=presets.focus;
-el("presetBreak").value=presets.break;
-el("presetDialog").showModal();
-}
-
-let holdTimer=null;
-let held=false;
-let holdStart=null;
-
-const presetBtn=el("preset");
-
-presetBtn.onpointerdown=e=>{
-if(e.button!==0)return;
-held=false;
-holdStart={x:e.clientX,y:e.clientY};
-clearTimeout(holdTimer);
-
-holdTimer=setTimeout(()=>{
-held=true;
-editPreset();
-},650);
+$("resetBtn").onclick=()=>{
+  pause();
+  remaining[state.selected]=state[state.selected]*60;
+  renderTimer();
 };
-
-presetBtn.onpointermove=e=>{
-if(holdStart&&Math.hypot(
-e.clientX-holdStart.x,
-e.clientY-holdStart.y
-)>12){
-clearTimeout(holdTimer);
+function resetPreset(){
+  pause();
+  state.focus=state.presetFocus;
+  state.break=state.presetBreak;
+  remaining.focus=state.focus*60;
+  remaining.break=state.break*60;
+  state.selected="focus";
+  persist();renderTimer();
 }
-};
-
-for(const ev of ["pointerup","pointercancel","pointerleave"]){
-presetBtn.addEventListener(ev,()=>{
-clearTimeout(holdTimer);
-holdStart=null;
+let presetTimer=null,presetLong=false;
+$("presetBtn").addEventListener("pointerdown",()=>{
+  presetLong=false;
+  presetTimer=setTimeout(()=>{
+    presetLong=true;
+    $("presetFocus").value=state.presetFocus;
+    $("presetBreak").value=state.presetBreak;
+    $("presetModal").classList.add("open");
+  },650);
 });
-}
-
-presetBtn.oncontextmenu=e=>e.preventDefault();
-
-presetBtn.onclick=e=>{
-if(held){
-e.preventDefault();
-held=false;
-return;
-}
-applyPreset();
-};
-
-el("presetForm").onsubmit=e=>{
-if(e.submitter?.value!=="save")return;
-
-const f=Number(el("presetFocus").value);
-const b=Number(el("presetBreak").value);
-
-if(!Number.isInteger(f)||!Number.isInteger(b)||
-f<1||b<1||f>180||b>180){
-e.preventDefault();
-return;
-}
-
-presets={focus:f,break:b};
-store("flowTimerPresets",presets);
-applyPreset();
-};
-
-/* DIAL */
-
-let lastAngle=null;
-let accum=0;
-
-const angle=e=>{
-const r=el("dial").getBoundingClientRect();
-return Math.atan2(
-e.clientY-(r.top+r.height/2),
-e.clientX-(r.left+r.width/2)
-)*180/Math.PI;
-};
-
-el("dial").onpointerdown=e=>{
-unlockAudio();
-lastAngle=angle(e);
-accum=0;
-el("dial").setPointerCapture(e.pointerId);
-};
-
-el("dial").onpointermove=e=>{
-if(lastAngle===null)return;
-
-let a=angle(e);
-let delta=a-lastAngle;
-
-if(delta>180)delta-=360;
-if(delta< -180)delta+=360;
-
-accum+=delta;
-lastAngle=a;
-
-const steps=Math.trunc(accum/18);
-
-if(steps){
-adjust(steps);
-accum-=steps*18;
-}
-};
-
-for(const ev of ["pointerup","pointercancel","lostpointercapture"]){
-el("dial").addEventListener(ev,()=>lastAngle=null);
-}
-
-el("dial").onkeydown=e=>{
-if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft"].includes(e.key)){
-e.preventDefault();
-adjust(["ArrowUp","ArrowRight"].includes(e.key)?1:-1);
-}
-};
-
-document.addEventListener("visibilitychange",()=>{
-if(!document.hidden)sync();
+["pointerup","pointercancel","pointerleave"].forEach(type=>{
+  $("presetBtn").addEventListener(type,()=>clearTimeout(presetTimer));
 });
-
-/* APPEARANCE */
-
-const appearance=read("flowTimerAppearance");
-
-let skin=appearance.skin||"gray";
-let knobColor=appearance.knob||"#f07d60";
-let customBody=appearance.body||"#545b62";
-
-const woods={
-maple:["#e2cba4","#bfa27b","#987b58"],
-oak:["#c7a77a","#9e7b51","#765636"],
-walnut:["#80604b","#523a2d","#30221c"],
-cherry:["#ad6e50","#794431","#4d2a23"],
-espresso:["#574337","#30241e","#1c1513"],
-ebony:["#45403b","#252321","#131313"]
+$("presetBtn").onclick=()=>{
+  if(!presetLong)resetPreset();
 };
+$("savePreset").onclick=()=>{
+  state.presetFocus=Math.max(1,Math.min(180,
+    Number($("presetFocus").value)||25));
+  state.presetBreak=Math.max(1,Math.min(180,
+    Number($("presetBreak").value)||5));
+  $("presetModal").classList.remove("open");
+  resetPreset();
+};
+$("cancelPreset").onclick=()=>
+  $("presetModal").classList.remove("open");
 
-function grain(){
-const lines=[];
-
-for(let i=0;i<55;i++){
-const y=i*2;
-const drift=Math.sin(i*1.8)*1.5;
-const thickness=i%7===0?1.2:.35;
-const opacity=i%6===0?.16:.08;
-
-lines.push(
-`<path d="M-20 ${y} C 25 ${y+drift*2}, 55 ${y-drift*3}, 105 ${y+drift}" stroke="rgba(30,16,8,${opacity})" stroke-width="${thickness}" fill="none"/>`
-);
+const knob=$("knob");
+let dragging=false,lastAngle=null;
+function pointerAngle(e){
+  const r=knob.getBoundingClientRect();
+  return Math.atan2(e.clientY-(r.top+r.height/2),
+    e.clientX-(r.left+r.width/2))*180/Math.PI;
 }
-
-const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 105" preserveAspectRatio="none">${lines.join("")}</svg>`;
-
-return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-}
-
-function shade(hex,amount){
-const n=parseInt(hex.slice(1),16);
-const c=[n>>16,(n>>8)&255,n&255]
-.map(v=>Math.max(0,Math.min(255,v+amount)));
-
-return "#"+c.map(v=>v.toString(16).padStart(2,"0")).join("");
-}
-
-function applySkin(){
-if(skin==="gray"){
-root.style.setProperty("--body1","#545b62");
-root.style.setProperty("--body2","#363c42");
-root.style.setProperty("--body3","#5b6269");
-root.style.setProperty("--edge","#858b91");
-root.style.setProperty("--wood","none");
-knobColor="#f07d60";
-}else if(woods[skin]){
-const w=woods[skin];
-
-root.style.setProperty("--body1",w[0]);
-root.style.setProperty("--body2",w[1]);
-root.style.setProperty("--body3",w[2]);
-root.style.setProperty("--edge",w[0]);
-root.style.setProperty("--wood",grain());
-}else{
-root.style.setProperty("--body1",shade(customBody,24));
-root.style.setProperty("--body2",shade(customBody,-18));
-root.style.setProperty("--body3",customBody);
-root.style.setProperty("--edge",shade(customBody,35));
-root.style.setProperty("--wood","none");
-}
-
-root.style.setProperty("--marker",knobColor);
-
-const darkWood=["walnut","espresso","ebony"].includes(skin);
-
-root.style.setProperty("--ring1",darkWood?"#b6bbbd":"#e0e3e2");
-root.style.setProperty("--ring2",darkWood?"#535c60":"#81898b");
-root.style.setProperty("--ring3",darkWood?"#8d969a":"#c5cacc");
-
-el("skin").value=skin;
-el("knobColor").value=knobColor;
-el("bodyColor").value=customBody;
-
-store("flowTimerAppearance",{
-skin,
-knob:knobColor,
-body:customBody
+knob.addEventListener("pointerdown",e=>{
+  dragging=true;lastAngle=pointerAngle(e);
+  knob.setPointerCapture(e.pointerId);
 });
-}
-
-el("settings").onclick=()=>{
-renderSavedCities();
-el("settingsDialog").showModal();
-};
-
-el("closeSettings").onclick=()=>{
-el("settingsDialog").close();
-};
-
-el("skin").onchange=e=>{
-skin=e.target.value;
-applySkin();
-};
-
-el("knobColor").oninput=e=>{
-knobColor=e.target.value;
-root.style.setProperty("--marker",knobColor);
-store("flowTimerAppearance",{
-skin,
-knob:knobColor,
-body:customBody
+knob.addEventListener("pointermove",e=>{
+  if(!dragging)return;
+  const angle=pointerAngle(e);
+  let delta=angle-lastAngle;
+  if(delta>180)delta-=360;
+  if(delta< -180)delta+=360;
+  if(Math.abs(delta)<2)return;
+  lastAngle=angle;
+  pause();
+  const key=state.selected;
+  const next=Math.max(1,Math.min(180,
+    Math.round(remaining[key]/60+delta/5)));
+  state[key]=next;
+  remaining[key]=next*60;
+  persist();renderTimer();
 });
-};
+knob.addEventListener("pointerup",()=>dragging=false);
+knob.addEventListener("pointercancel",()=>dragging=false);
+knob.addEventListener("wheel",e=>{
+  e.preventDefault();pause();
+  const key=state.selected;
+  state[key]=Math.max(1,Math.min(180,
+    state[key]+(e.deltaY<0?1:-1)));
+  remaining[key]=state[key]*60;
+  persist();renderTimer();
+},{passive:false});
 
-el("bodyColor").oninput=e=>{
-customBody=e.target.value;
-skin="custom";
-applySkin();
-};
+function swapPanels(){
+  state.reversed=!state.reversed;
+  $("app").classList.toggle("reversed",state.reversed);
+  persist();
+}
+$("swapBtn").onclick=swapPanels;
+$("swapSettings").onclick=swapPanels;
 
-/* CLOCK */
+const finishes={
+  gray:["#555d62",false],
+  oak:["#c6a77e",true],
+  maple:["#d9bb91",true],
+  walnut:["#76513b",true],
+  mahogany:["#663c35",true],
+  ebony:["#282626",true]
+};
+function applyTheme(){
+  const root=document.documentElement;
+  const chosen=finishes[state.finish]||[
+    state.customCase,false];
+  root.style.setProperty("--case",chosen[0]);
+  const grain=chosen[1]?
+    "repeating-linear-gradient(2deg,"+
+    "transparent 0px,transparent 10px,"+
+    "#39261718 11px,#24170d25 12px,"+
+    "transparent 15px,transparent 27px),"+
+    "linear-gradient(175deg,#ffffff20,transparent 60%,#00000030)"
+    :"none";
+  root.style.setProperty("--grain",grain);
+  let metal=state.metal;
+  if(metal==="auto"){
+    metal=state.finish==="gray"?"silver":
+      ["walnut","mahogany","ebony"].includes(state.finish)?
+      "dark":"silver";
+  }
+  const metals={
+    silver:"#bdc8ca",dark:"#747c80",
+    black:"#252a2d",orange:"#f47d60"
+  };
+  root.style.setProperty("--metal",metals[metal]);
+  root.style.setProperty("--accent",state.accent);
+}
+function updateSettings(){
+  $("finishSelect").value=state.finish;
+  $("metalSelect").value=state.metal;
+  $("accentColor").value=state.accent;
+  $("caseColor").value=state.customCase;
+  $("unitSelect").value=state.units;
+  $("repeatCheck").checked=state.repeat;
+}
+$("settingsBtn").onclick=()=>{
+  updateSettings();
+  $("settingsModal").classList.add("open");
+};
+$("closeSettings").onclick=()=>
+  $("settingsModal").classList.remove("open");
+$("finishSelect").onchange=e=>{
+  state.finish=e.target.value;
+  if(state.finish==="gray"){
+    state.metal="auto";
+    state.accent="#f47d60";
+  }
+  updateSettings();applyTheme();persist();
+};
+$("metalSelect").onchange=e=>{
+  state.metal=e.target.value;applyTheme();persist();
+};
+$("accentColor").oninput=e=>{
+  state.accent=e.target.value;applyTheme();persist();
+};
+$("caseColor").oninput=e=>{
+  state.customCase=e.target.value;
+  state.finish="custom";
+  $("finishSelect").value="custom";
+  applyTheme();persist();
+};
+$("unitSelect").onchange=e=>{
+  state.units=e.target.value;persist();renderWeather();
+};
+$("repeatCheck").onchange=e=>{
+  state.repeat=e.target.checked;persist();
+};
 
 function updateClock(){
-const now=new Date();
-
-const day=now.toLocaleDateString("en-US",{
-weekday:"short"
-}).toUpperCase();
-
-const date=now.toLocaleDateString("en-US",{
-month:"2-digit",
-day:"2-digit"
-});
-
-el("date").textContent=day+" "+date;
-
-const time=now.toLocaleTimeString("en-US",{
-hour:"numeric",
-minute:"2-digit",
-hour12:true
-});
-
-const parts=time.split(" ");
-
-el("clock").innerHTML=
-parts[0]+" <small>"+(parts[1]||"")+"</small>";
+  const now=new Date();
+  const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  $("dateText").textContent=days[now.getDay()]+" "+
+    String(now.getMonth()+1).padStart(2,"0")+"/"+
+    String(now.getDate()).padStart(2,"0");
+  let hour=now.getHours();
+  const ampm=hour>=12?"PM":"AM";
+  hour=hour%12||12;
+  $("clockText").innerHTML=hour+":"+
+    String(now.getMinutes()).padStart(2,"0")+
+    ' <span class="ampm">'+ampm+"</span>";
 }
+setInterval(updateClock,10000);
 
-updateClock();
-setInterval(updateClock,1000);
-
-/* WEATHER */
-
-const weatherPrefs=read("flowTimerWeather");
-
-let units=["f","c","both"].includes(weatherPrefs.units)
-?weatherPrefs.units:"both";
-
-let cities=Array.isArray(weatherPrefs.cities)
-?weatherPrefs.cities.filter(c=>
-c&&typeof c.name==="string"&&
-Number.isFinite(c.lat)&&Number.isFinite(c.lon)
-):[];
-
-let cityIndex=Number.isInteger(weatherPrefs.index)
-?weatherPrefs.index:0;
-
-let currentCoords=null;
-let weatherCache={};
-let weatherRequest=0;
-
-function saveWeather(){
-store("flowTimerWeather",{
-units,
-cities,
-index:cityIndex
-});
+function formatTemp(c){
+  if(c===null||c===undefined)return "--";
+  const f=Math.round(c*9/5+32);
+  const cc=Math.round(c);
+  if(state.units==="f")return f+"°F";
+  if(state.units==="c")return cc+"°C";
+  return f+"°F ("+cc+"°C)";
 }
-
-function temp(c){
-if(c===null||c===undefined||!Number.isFinite(Number(c))){
-return "--";
+function weatherDescription(code){
+  if(code===0)return ["☀️","Clear"];
+  if(code<=2)return ["🌤️","Partly cloudy"];
+  if(code===3)return ["☁️","Cloudy"];
+  if(code<=48)return ["🌫️","Fog"];
+  if(code<=67)return ["🌧️","Rain"];
+  if(code<=77)return ["❄️","Snow"];
+  if(code<=82)return ["🌦️","Showers"];
+  if(code<=86)return ["🌨️","Snow showers"];
+  if(code>=95)return ["⛈️","Thunderstorms"];
+  return ["☁️","Cloudy"];
 }
-
-const n=Number(c);
-const f=Math.round(n*9/5+32);
-const cel=Math.round(n);
-
-if(units==="f")return f+"°F";
-if(units==="c")return cel+"°C";
-return f+"°F ("+cel+"°C)";
+function selectedLocation(){
+  if(state.locationIndex===0)return {
+    name:"Current Location",current:true
+  };
+  return state.locations[state.locationIndex-1]||{
+    name:"Current Location",current:true
+  };
 }
-
-function weatherDescription(code,isDay=true){
-if(code===0)return [isDay?"☀️":"🌙","Clear"];
-if(code<=2)return [isDay?"🌤️":"☁️","Partly cloudy"];
-if(code===3)return ["☁️","Cloudy"];
-if(code===45||code===48)return ["🌫️","Fog"];
-if(code>=51&&code<=57)return ["🌦️","Drizzle"];
-if(code>=61&&code<=67)return ["🌧️","Rain"];
-if(code>=71&&code<=77)return ["🌨️","Snow"];
-if(code>=80&&code<=82)return ["🌧️","Rain showers"];
-if(code>=85&&code<=86)return ["🌨️","Snow showers"];
-if(code>=95)return ["⛈️","Thunderstorm"];
-return ["🌡️","Weather"];
+async function coordinates(){
+  const loc=selectedLocation();
+  if(!loc.current)return loc;
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation){
+      reject(new Error("Location unavailable"));return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      p=>resolve({
+        latitude:p.coords.latitude,
+        longitude:p.coords.longitude
+      }),
+      ()=>reject(new Error("Allow location access in Safari")),
+      {enableHighAccuracy:false,timeout:12000,
+       maximumAge:600000}
+    );
+  });
 }
-
-function selectedCity(){
-if(cityIndex===0){
-return currentCoords
-?{name:"Current Location",...currentCoords}
-:null;
+async function fetchWeather(){
+  const loc=selectedLocation();
+  $("locationName").textContent=loc.name;
+  $("currentTemp").textContent="Loading…";
+  $("condition").textContent="";
+  try{
+    const pos=await coordinates();
+    const url="https://api.open-meteo.com/v1/forecast?"+
+      "latitude="+encodeURIComponent(pos.latitude)+
+      "&longitude="+encodeURIComponent(pos.longitude)+
+      "&current=temperature_2m,weather_code"+
+      "&daily=temperature_2m_max,temperature_2m_min"+
+      "&temperature_unit=celsius&timezone=auto"+
+      "&forecast_days=1";
+    const response=await fetch(url);
+    if(!response.ok)throw new Error("Weather unavailable");
+    const data=await response.json();
+    weatherCache[loc.name]=data;
+    lastWeatherFetch=Date.now();
+    renderWeather();
+  }catch(e){
+    $("currentTemp").textContent="Unavailable";
+    $("condition").textContent=e.message;
+    $("lowTemp").textContent="--";
+    $("highTemp").textContent="--";
+    $("updatedText").textContent="";
+  }
 }
-return cities[cityIndex-1]||null;
+function renderWeather(){
+  const loc=selectedLocation();
+  $("locationName").textContent=loc.name;
+  const data=weatherCache[loc.name];
+  if(!data)return;
+  const desc=weatherDescription(data.current.weather_code);
+  $("weatherIcon").textContent=desc[0];
+  $("condition").textContent=desc[1];
+  $("currentTemp").textContent=
+    formatTemp(data.current.temperature_2m);
+  $("lowTemp").textContent=
+    formatTemp(data.daily.temperature_2m_min[0]);
+  $("highTemp").textContent=
+    formatTemp(data.daily.temperature_2m_max[0]);
+  $("updatedText").textContent="Today's forecast";
 }
-
-function setWeatherMessage(message){
-el("weatherIcon").textContent="🌡️";
-el("currentTemp").textContent="--";
-el("lowTemp").textContent="--";
-el("highTemp").textContent="--";
-el("conditions").textContent=message;
+function changeLocation(delta){
+  const total=state.locations.length+1;
+  state.locationIndex=(state.locationIndex+delta+total)%total;
+  persist();fetchWeather();
 }
-
-async function loadWeather(force=false){
-const request=++weatherRequest;
-const city=selectedCity();
-
-el("locationName").textContent=
-cityIndex===0?"Current Location":
-(city?.name||"Location");
-
-if(!city){
-setWeatherMessage(
-cityIndex===0
-?"Location permission needed"
-:"Select a location"
-);
-el("weatherNote").textContent=
-cityIndex===0
-?"Enable location access to view local weather"
-:"Add a city in Settings";
-return;
-}
-
-const key=city.lat.toFixed(3)+","+city.lon.toFixed(3);
-const cached=weatherCache[key];
-
-if(!force&&cached&&Date.now()-cached.time<1800000){
-showWeather(cached.data);
-return;
-}
-
-el("conditions").textContent="Updating weather...";
-
-try{
-const url=
-"https://api.open-meteo.com/v1/forecast?"+
-new URLSearchParams({
-latitude:city.lat,
-longitude:city.lon,
-current:"temperature_2m,weather_code,is_day",
-daily:"temperature_2m_max,temperature_2m_min",
-temperature_unit:"celsius",
-timezone:"auto",
-forecast_days:"1"
-});
-
-const response=await fetch(url);
-
-if(!response.ok)throw new Error("Weather unavailable");
-
-const data=await response.json();
-
-if(request!==weatherRequest)return;
-
-weatherCache[key]={data,time:Date.now()};
-showWeather(data);
-
-}catch(e){
-if(request!==weatherRequest)return;
-if(cached){
-showWeather(cached.data);
-el("weatherNote").textContent="Showing last available forecast";
-}else{
-setWeatherMessage("Weather unavailable");
-el("weatherNote").textContent="Check your connection and retry";
-}
-}
-}
-
-function showWeather(data){
-const current=data.current||{};
-const daily=data.daily||{};
-
-const [icon,description]=weatherDescription(
-current.weather_code,
-current.is_day===1
-);
-
-el("weatherIcon").textContent=icon;
-el("currentTemp").textContent=temp(current.temperature_2m);
-el("conditions").textContent=description;
-
-el("lowTemp").textContent=temp(
-daily.temperature_2m_min?.[0]
-);
-
-el("highTemp").textContent=temp(
-daily.temperature_2m_max?.[0]
-);
-
-el("weatherNote").textContent=
-"Today's forecast · Updated "+
-new Date().toLocaleTimeString("en-US",{
-hour:"numeric",
-minute:"2-digit"
-});
-}
-
-function changeCity(direction){
-const total=cities.length+1;
-cityIndex=(cityIndex+direction+total)%total;
-saveWeather();
-loadWeather();
-}
-
-el("prevCity").onclick=()=>changeCity(-1);
-el("nextCity").onclick=()=>changeCity(1);
-
-function requestLocation(){
-if(!navigator.geolocation){
-setWeatherMessage("Location not supported");
-return;
-}
-
-navigator.geolocation.getCurrentPosition(
-position=>{
-currentCoords={
-lat:position.coords.latitude,
-lon:position.coords.longitude
+$("prevLocation").onclick=()=>changeLocation(-1);
+$("nextLocation").onclick=()=>changeLocation(1);
+$("addLocation").onclick=()=>{
+  $("locationMessage").textContent="";
+  $("locationModal").classList.add("open");
 };
-
-if(cityIndex===0)loadWeather(true);
-},
-error=>{
-if(cityIndex===0){
-setWeatherMessage("Location unavailable");
-el("weatherNote").textContent=
-"Allow location access or choose a saved city";
-}
-},
-{
-enableHighAccuracy:false,
-timeout:12000,
-maximumAge:1800000
-}
-);
-}
-
-function renderSavedCities(){
-const box=el("savedCities");
-box.replaceChildren();
-
-const current=document.createElement("div");
-current.className="saved-city";
-current.textContent="📍 Current Location";
-box.appendChild(current);
-
-cities.forEach((city,i)=>{
-const row=document.createElement("div");
-row.className="saved-city";
-
-const name=document.createElement("span");
-name.textContent=city.name;
-
-const remove=document.createElement("button");
-remove.textContent="Remove";
-remove.className="secondary";
-
-remove.onclick=()=>{
-cities.splice(i,1);
-
-if(cityIndex===i+1)cityIndex=0;
-else if(cityIndex>i+1)cityIndex--;
-
-saveWeather();
-renderSavedCities();
-loadWeather();
+$("closeLocation").onclick=()=>
+  $("locationModal").classList.remove("open");
+$("saveLocation").onclick=async()=>{
+  const name=$("cityInput").value.trim();
+  if(!name)return;
+  $("locationMessage").textContent="Searching…";
+  try{
+    const url="https://geocoding-api.open-meteo.com/v1/search?"+
+      "name="+encodeURIComponent(name)+
+      "&count=1&language=en&format=json";
+    const response=await fetch(url);
+    const data=await response.json();
+    if(!data.results?.length)throw new Error("City not found");
+    const city=data.results[0];
+    const item={
+      name:city.name+
+        (city.admin1?", "+city.admin1:"")+
+        (city.country?", "+city.country:""),
+      latitude:city.latitude,
+      longitude:city.longitude
+    };
+    state.locations.push(item);
+    state.locationIndex=state.locations.length;
+    $("locationModal").classList.remove("open");
+    $("cityInput").value="";
+    persist();fetchWeather();
+  }catch(e){
+    $("locationMessage").textContent=e.message;
+  }
 };
-
-row.append(name,remove);
-box.appendChild(row);
-});
-}
-
-function openCityDialog(){
-el("cityInput").value="";
-el("cityResults").replaceChildren();
-el("cityDialog").showModal();
-}
-
-el("addCity").onclick=openCityDialog;
-el("manageAddCity").onclick=openCityDialog;
-
-el("cancelCity").onclick=()=>{
-el("cityDialog").close();
+$("removeLocation").onclick=()=>{
+  if(state.locationIndex===0){
+    $("locationMessage").textContent=
+      "Current Location cannot be removed.";
+    return;
+  }
+  state.locations.splice(state.locationIndex-1,1);
+  state.locationIndex=0;
+  persist();
+  $("locationModal").classList.remove("open");
+  fetchWeather();
 };
-
-async function searchCity(){
-const q=el("cityInput").value.trim();
-const results=el("cityResults");
-results.replaceChildren();
-
-if(q.length<2){
-results.textContent="Enter at least two characters.";
-return;
-}
-
-results.textContent="Searching...";
-
-try{
-const url=
-"https://geocoding-api.open-meteo.com/v1/search?"+
-new URLSearchParams({
-name:q,
-count:"10",
-language:"en",
-format:"json"
-});
-
-const response=await fetch(url);
-if(!response.ok)throw new Error();
-
-const data=await response.json();
-results.replaceChildren();
-
-if(!data.results?.length){
-results.textContent="No matching cities found.";
-return;
-}
-
-for(const city of data.results){
-const name=[
-city.name,
-city.admin1,
-city.country
-].filter(Boolean).join(", ");
-
-const button=document.createElement("button");
-button.className="secondary";
-button.style.display="block";
-button.style.width="100%";
-button.style.textAlign="left";
-button.textContent=name;
-
-button.onclick=()=>{
-if(!cities.some(c=>
-Math.abs(c.lat-city.latitude)<.001&&
-Math.abs(c.lon-city.longitude)<.001
-)){
-cities.push({
-name,
-lat:city.latitude,
-lon:city.longitude
-});
-}
-
-cityIndex=cities.findIndex(c=>
-Math.abs(c.lat-city.latitude)<.001&&
-Math.abs(c.lon-city.longitude)<.001
-)+1;
-
-saveWeather();
-renderSavedCities();
-el("cityDialog").close();
-loadWeather(true);
-};
-
-results.appendChild(button);
-}
-
-}catch(e){
-results.textContent="City search unavailable. Try again.";
-}
-}
-
-el("searchCity").onclick=searchCity;
-
-el("cityInput").addEventListener("keydown",e=>{
-if(e.key==="Enter"){
-e.preventDefault();
-searchCity();
-}
-});
-
-el("units").value=units;
-
-el("units").onchange=e=>{
-units=e.target.value;
-saveWeather();
-loadWeather();
-};
-
-el("refreshWeather").onclick=()=>{
-if(cityIndex===0)requestLocation();
-else loadWeather(true);
-};
-
-if(cityIndex>cities.length)cityIndex=0;
-
-saveWeather();
-applySkin();
-render();
-requestLocation();
-
-if(cityIndex!==0)loadWeather();
-
 setInterval(()=>{
-if(!document.hidden)loadWeather();
-},1800000);
-
+  if(Date.now()-lastWeatherFetch>20*60*1000)
+    fetchWeather();
+},60000);
 document.addEventListener("visibilitychange",()=>{
-if(!document.hidden){
-updateClock();
-loadWeather();
-}
+  if(!document.hidden){
+    updateClock();
+    if(state.running){
+      remaining[state.selected]=Math.max(0,
+        (deadline-Date.now())/1000);
+      if(remaining[state.selected]===0)phaseComplete();
+      else renderTimer();
+    }
+    if(Date.now()-lastWeatherFetch>20*60*1000)
+      fetchWeather();
+  }
 });
-
-})();
+$("app").classList.toggle("reversed",state.reversed);
+applyTheme();
+updateClock();
+renderTimer();
+fetchWeather();
 </script>
 </body>
 </html>
