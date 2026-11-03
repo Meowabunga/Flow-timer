@@ -1,0 +1,886 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080a0b">
+<title>Flow Timer</title>
+<style>
+*{box-sizing:border-box}
+:root{
+ --accent:#f47d60;
+ --metal:#b9c2c4;
+ --case:#555d62;
+ --grain:none;
+}
+html,body{
+ margin:0;width:100%;min-height:100%;
+ background:#080a0b;color:#f4f6f4;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+button,input,select{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+#app{
+ width:100%;min-height:100dvh;
+ display:flex;align-items:center;justify-content:center;
+ padding:8px;gap:10px;
+}
+#app.reversed{flex-direction:row-reverse}
+.timer-panel{
+ position:relative;flex:1.85;min-width:0;
+ height:min(96dvh,750px);
+ padding:12px;
+ border:3px solid #aab0b0;border-radius:28px;
+ background-image:var(--grain);
+ background-color:var(--case);
+ box-shadow:inset 0 3px 9px #ffffff26,inset 0 -5px 12px #0004;
+ display:flex;gap:12px;
+}
+.screen{
+ position:relative;
+ flex:1;min-width:0;
+ border:9px solid #22292c;border-radius:25px;
+ background:#080a0b;
+ display:flex;flex-direction:column;overflow:hidden;
+}
+.phase{
+ flex:1;min-height:0;
+ display:flex;flex-direction:column;justify-content:center;
+ padding:5%;cursor:pointer;opacity:.30;
+}
+.phase.active{opacity:1}
+.phase+.phase{border-top:2px solid #1e2325}
+.phase-label{
+ color:#a6b8b5;letter-spacing:.24em;
+ font-size:clamp(11px,1.6vw,19px);font-weight:750;
+}
+.digits{
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-variant-numeric:tabular-nums;
+ letter-spacing:-.07em;
+ font-size:clamp(37px,7vw,105px);
+ line-height:1.2;white-space:nowrap;
+}
+.controls{
+ width:clamp(75px,17%,125px);
+ display:flex;flex-direction:column;
+ align-items:center;
+ padding:0 0 10px;
+}
+.settings{
+ position:absolute;top:12px;right:12px;z-index:4;
+ border:1px solid #879397;
+ background:#222a2e;color:white;
+ border-radius:50%;
+ width:36px;height:36px;
+ display:grid;place-items:center;
+ padding:0;font-size:22px;
+ flex-shrink:0;
+}
+.control-stack{
+ width:100%;flex:1;
+ display:flex;flex-direction:column;
+ align-items:center;justify-content:center;
+ gap:clamp(20px,5dvh,48px);
+ padding-top:22px;
+}
+.knob{
+ position:relative;
+ width:100%;aspect-ratio:1;
+ border-radius:50%;
+ border:clamp(5px,1.2vw,10px) solid var(--metal);
+ background:radial-gradient(circle at 35% 30%,#404b50,#252d31 75%);
+ box-shadow:0 5px 9px #0006,inset 0 0 0 4px #172024;
+ touch-action:none;
+ display:grid;place-items:center;
+ user-select:none;-webkit-user-select:none;
+}
+.knob-mark{
+ position:absolute;inset:0;
+ transform:rotate(0deg);
+ pointer-events:none;
+}
+.knob-mark::before{
+ content:"";
+ position:absolute;
+ width:8%;height:17%;
+ background:var(--accent);
+ border-radius:9px;
+ left:46%;top:7%;
+}
+.knob-label{
+ position:relative;z-index:1;
+ text-align:center;
+ color:#edf1f0;
+ font-size:clamp(12px,1.8vw,21px);
+ font-weight:750;
+ line-height:1.1;
+ pointer-events:none;
+ text-shadow:0 1px 2px #0009;
+}
+.knob-label small{
+ display:block;
+ font-size:.48em;
+ letter-spacing:.1em;
+ color:#aebbbd;
+ margin-top:3px;
+}
+.round{
+ width:78%;aspect-ratio:1;
+ border:5px solid #aab6b9;border-radius:50%;
+ background:#303a3f;color:white;
+ font-size:clamp(22px,3vw,37px);
+ display:grid;place-items:center;
+}
+.round:active,.preset:active{filter:brightness(1.3)}
+.preset{
+ width:100%;min-height:38px;
+ border:1.5px solid #aeb9bc;border-radius:14px;
+ background:#222b2f;color:white;
+ font-size:clamp(12px,1.5vw,18px);
+ font-weight:750;padding:5px 2px;
+}
+.info-panel{
+ flex:1;min-width:0;height:min(96dvh,750px);
+ padding:20px;border:3px solid #404b50;
+ border-radius:27px;
+ background:linear-gradient(145deg,#20292d,#111719);
+ display:flex;flex-direction:column;
+}
+.info-header{
+ display:flex;align-items:flex-start;
+ justify-content:space-between;gap:10px;
+}
+.date{
+ color:#aab9b7;letter-spacing:.16em;
+ font-weight:750;font-size:clamp(12px,1.7vw,21px);
+}
+.clock{
+ font-size:clamp(27px,4vw,49px);
+ font-weight:700;font-variant-numeric:tabular-nums;
+}
+.ampm{font-size:.42em;color:#b3bec0;font-weight:400}
+.swap{
+ flex-shrink:0;width:42px;height:42px;
+ border:1.5px solid #59666b;border-radius:50%;
+ background:#293338;color:#b4c0c2;font-size:23px;
+}
+.rule{height:2px;background:#354145;margin:20px 0}
+.locations{display:flex;align-items:center;gap:5px}
+.location-name{
+ flex:1;min-width:0;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;
+ font-size:clamp(13px,1.7vw,20px);font-weight:650;
+}
+.small-btn{
+ width:32px;height:34px;flex-shrink:0;
+ border:1.5px solid #6d7e83;border-radius:11px;
+ background:#2b383d;color:#e5eded;font-size:20px;
+}
+.weather-center{
+ flex:1;min-height:0;
+ display:flex;flex-direction:column;
+ align-items:center;justify-content:center;
+ text-align:center;gap:12px;
+}
+.weather-icon{font-size:clamp(37px,5vw,65px)}
+.temp{font-size:clamp(21px,2.8vw,37px);font-weight:750}
+.condition{color:#a8b7b8;font-size:clamp(12px,1.6vw,19px)}
+.forecast{display:flex;gap:10px}
+.forecast-box{
+ flex:1;min-width:0;padding:12px 5px;
+ border:1.5px solid #3b4c51;border-radius:17px;
+ background:#202b30;text-align:center;
+}
+.forecast-label{color:#a8b7b9;font-size:13px}
+.forecast-value{
+ font-size:clamp(13px,1.6vw,20px);
+ font-weight:700;margin-top:8px;
+}
+.updated{
+ text-align:center;color:#98a8aa;
+ font-size:12px;margin-top:12px;
+}
+.modal{
+ display:none;position:fixed;inset:0;
+ z-index:20;background:#000b;
+ align-items:center;justify-content:center;padding:16px;
+}
+.modal.open{display:flex}
+.modal-card{
+ width:min(430px,100%);
+ max-height:85dvh;overflow:auto;
+ background:#20292d;border:1px solid #667479;
+ border-radius:20px;padding:22px;
+}
+.modal-card h2{margin-top:0}
+.field{margin:14px 0}
+.field label{display:block;margin-bottom:6px;color:#c1cbcc}
+.field input:not([type=checkbox]),.field select{
+ width:100%;padding:10px;
+ background:#101719;color:white;
+ border:1px solid #607076;border-radius:9px;
+}
+.action{
+ border:1px solid #819094;border-radius:10px;
+ background:#344248;color:white;
+ padding:10px 15px;margin:5px 5px 5px 0;
+}
+.hint{color:#9daeb0;font-size:12px}
+@media(max-aspect-ratio:1/1){
+ #app{
+  flex-direction:column;
+  justify-content:flex-start;padding:8px;
+ }
+ #app.reversed{flex-direction:column-reverse}
+ .timer-panel,.info-panel{
+  flex:none;width:100%;height:auto;
+ }
+ .timer-panel{height:min(65dvh,620px)}
+ .info-panel{height:min(44dvh,420px)}
+ .digits{font-size:clamp(35px,10vw,85px)}
+ .phase-label{font-size:clamp(12px,3vw,18px)}
+ .controls{width:20%}
+ .control-stack{gap:clamp(14px,3dvh,32px)}
+ .weather-center{gap:5px}
+ .weather-icon{font-size:35px}
+ .rule{margin:10px 0}
+ .info-panel{padding:14px}
+ .knob-label{font-size:clamp(10px,3vw,18px)}
+}
+/* Portrait/open-screen positioning only; folded landscape remains unchanged. */
+@media(max-aspect-ratio:1/1){
+  /* Keep panels at the top with no extra page spacing. */
+  #app{justify-content:flex-start;align-items:stretch;padding-top:0;}
+  /* Put the gear in the upper-right corner of the black timer screen. */
+  .timer-panel .settings{top:12px;right:12px;}
+  /* Center swap over the entire weather panel, independently of clock width. */
+  .info-panel{position:relative;}
+  .info-panel .swap{
+    position:absolute;
+    top:16px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:2;
+  }
+}
+@media(max-width:390px) and (orientation:portrait){
+ .digits{font-size:clamp(32px,9vw,54px)}
+ .round{border-width:3px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<section class="timer-panel">
+ <div class="screen">
+  <button class="settings" id="settingsBtn" aria-label="Settings">⚙</button>
+  <div class="phase active" id="focusPhase">
+   <div class="phase-label">FOCUS ◆</div>
+   <div class="digits" id="focusTime">25:00</div>
+  </div>
+  <div class="phase" id="breakPhase">
+   <div class="phase-label">BREAK</div>
+   <div class="digits" id="breakTime">05:00</div>
+  </div>
+ </div>
+ <div class="controls">
+  <div style="height:36px;flex-shrink:0" aria-hidden="true"></div>
+  <div class="control-stack">
+   <div class="knob" id="knob" role="slider"
+        aria-label="Adjust selected minutes">
+    <div class="knob-mark" id="knobMark"></div>
+    <div class="knob-label" id="knobLabel">25<small>MIN</small></div>
+   </div>
+   <button class="round" id="playBtn" aria-label="Play or pause">▶</button>
+   <button class="round" id="resetBtn" aria-label="Reset selected timer">↻</button>
+  </div>
+  <button class="preset" id="presetBtn">25 / 5</button>
+ </div>
+</section>
+<section class="info-panel">
+ <div class="info-header">
+  <div>
+   <div class="date" id="dateText"></div>
+   <div class="clock" id="clockText"></div>
+  </div>
+  <button class="swap" id="swapBtn" aria-label="Swap panels">⇄</button>
+ </div>
+ <div class="rule"></div>
+ <div class="locations">
+  <div class="location-name" id="locationName">Current Location</div>
+  <button class="small-btn" id="prevLocation">‹</button>
+  <button class="small-btn" id="nextLocation">›</button>
+  <button class="small-btn" id="addLocation">+</button>
+ </div>
+ <div class="weather-center">
+  <div class="weather-icon" id="weatherIcon">☁️</div>
+  <div class="temp" id="currentTemp">Loading…</div>
+  <div class="condition" id="condition"></div>
+ </div>
+ <div class="forecast">
+  <div class="forecast-box">
+   <div class="forecast-label">LOW</div>
+   <div class="forecast-value" id="lowTemp">--</div>
+  </div>
+  <div class="forecast-box">
+   <div class="forecast-label">HIGH</div>
+   <div class="forecast-value" id="highTemp">--</div>
+  </div>
+ </div>
+ <div class="updated" id="updatedText"></div>
+</section>
+</div>
+
+<div class="modal" id="settingsModal">
+ <div class="modal-card">
+  <h2>Timer settings</h2>
+  <div class="field">
+   <label>Case finish</label>
+   <select id="finishSelect">
+    <option value="gray">Original gray</option>
+    <option value="oak">Light oak</option>
+    <option value="maple">Maple</option>
+    <option value="walnut">Walnut</option>
+    <option value="mahogany">Mahogany</option>
+    <option value="ebony">Ebony</option>
+    <option value="custom">Custom color</option>
+   </select>
+  </div>
+  <div class="field">
+   <label>Custom case color</label>
+   <input type="color" id="caseColor" value="#555d62">
+  </div>
+  <div class="field">
+   <label>Knob metal</label>
+   <select id="metalSelect">
+    <option value="auto">Match finish</option>
+    <option value="silver">Silver</option>
+    <option value="dark">Dark silver</option>
+    <option value="black">Black</option>
+    <option value="orange">Orange</option>
+   </select>
+  </div>
+  <div class="field">
+   <label>Knob indicator color</label>
+   <input type="color" id="accentColor" value="#f47d60">
+  </div>
+  <div class="field">
+   <label>Temperature units</label>
+   <select id="unitSelect">
+    <option value="both">Both °F (°C)</option>
+    <option value="f">Fahrenheit</option>
+    <option value="c">Celsius</option>
+   </select>
+  </div>
+  <div class="field">
+   <label>
+    <input type="checkbox" id="repeatCheck">
+    Automatically repeat focus and break
+   </label>
+  </div>
+  <button class="action" id="closeSettings">Done</button>
+ </div>
+</div>
+
+<div class="modal" id="presetModal">
+ <div class="modal-card">
+  <h2>Reset preset</h2>
+  <div class="field">
+   <label>Focus minutes</label>
+   <input id="presetFocus" type="number" min="1" max="180">
+  </div>
+  <div class="field">
+   <label>Break minutes</label>
+   <input id="presetBreak" type="number" min="1" max="180">
+  </div>
+  <button class="action" id="savePreset">Save preset</button>
+  <button class="action" id="cancelPreset">Cancel</button>
+ </div>
+</div>
+
+<div class="modal" id="locationModal">
+ <div class="modal-card">
+  <h2>Add weather location</h2>
+  <div class="field">
+   <label>City name</label>
+   <input id="cityInput" placeholder="Vancouver, BC">
+  </div>
+  <button class="action" id="saveLocation">Find city</button>
+  <button class="action" id="removeLocation">Remove selected city</button>
+  <button class="action" id="closeLocation">Close</button>
+  <div class="hint" id="locationMessage"></div>
+ </div>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const storeKey="flowTimerSettingsV8";
+const defaults={
+ focus:25,break:5,presetFocus:25,presetBreak:5,
+ selected:"focus",running:false,repeat:true,reversed:false,
+ finish:"gray",metal:"auto",accent:"#f47d60",
+ customCase:"#555d62",units:"both",
+ locations:[],locationIndex:0
+};
+let saved={};
+try{saved=JSON.parse(localStorage.getItem(storeKey)||"{}")}
+catch(e){}
+let state={...defaults,...saved,running:false};
+state.focus=Math.max(1,Number(state.focus)||25);
+state.break=Math.max(1,Number(state.break)||5);
+let remaining={focus:state.focus*60,break:state.break*60};
+let deadline=null,audioContext=null;
+let weatherCache={},lastWeatherFetch=0;
+
+function persist(){
+ localStorage.setItem(storeKey,
+  JSON.stringify({...state,running:false}));
+}
+function formatTime(seconds){
+ seconds=Math.max(0,Math.ceil(seconds));
+ return String(Math.floor(seconds/60)).padStart(2,"0")+
+  ":"+String(seconds%60).padStart(2,"0");
+}
+function renderTimer(){
+ $("focusTime").textContent=formatTime(remaining.focus);
+ $("breakTime").textContent=formatTime(remaining.break);
+ $("focusPhase").classList.toggle("active",state.selected==="focus");
+ $("breakPhase").classList.toggle("active",state.selected==="break");
+ $("playBtn").textContent=state.running?"Ⅱ":"▶";
+ $("presetBtn").textContent=state.presetFocus+" / "+state.presetBreak;
+
+ const key=state.selected;
+ const minutesRemaining=remaining[key]/60;
+ // Clock face: 0 at 12, 15 at 3, 30 at 6, 45 at 9.
+ // One full revolution equals 60 minutes.
+ const angle=(minutesRemaining%60)*6;
+ $("knobMark").style.transform="rotate("+angle+"deg)";
+ $("knobLabel").innerHTML=
+  Math.round(state[key])+"<small>MIN</small>";
+ knob.setAttribute("aria-valuenow",Math.round(minutesRemaining));
+}
+function selectPhase(phase){
+ if(state.running)pause();
+ state.selected=phase;
+ persist();renderTimer();
+}
+$("focusPhase").onclick=()=>selectPhase("focus");
+$("breakPhase").onclick=()=>selectPhase("break");
+
+function unlockAudio(){
+ try{
+  audioContext ||= new (window.AudioContext||
+   window.webkitAudioContext)();
+  if(audioContext.state==="suspended")audioContext.resume();
+ }catch(e){}
+}
+function beep(long=false){
+ if(!audioContext)return;
+ const start=audioContext.currentTime+.03;
+ const count=long?5:3;
+ const duration=long?.36:.24;
+ for(let i=0;i<count;i++){
+  const osc=audioContext.createOscillator();
+  const gain=audioContext.createGain();
+  osc.type="sine";osc.frequency.value=long?680:880;
+  const t=start+i*(duration+.12);
+  gain.gain.setValueAtTime(.0001,t);
+  gain.gain.exponentialRampToValueAtTime(.35,t+.025);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  osc.connect(gain).connect(audioContext.destination);
+  osc.start(t);osc.stop(t+duration+.02);
+ }
+}
+function play(){
+ unlockAudio();
+ if(remaining[state.selected]<=0)
+  remaining[state.selected]=state[state.selected]*60;
+ state.running=true;
+ deadline=Date.now()+remaining[state.selected]*1000;
+ renderTimer();
+}
+function pause(){
+ if(!state.running)return;
+ remaining[state.selected]=Math.max(0,
+  (deadline-Date.now())/1000);
+ state.running=false;deadline=null;
+ renderTimer();
+}
+function phaseComplete(){
+ const finished=state.selected;
+ remaining[finished]=0;
+ beep(finished==="break");
+ state.running=false;
+ const next=finished==="focus"?"break":"focus";
+ if(finished==="focus"||state.repeat){
+  state.selected=next;
+  if(remaining[next]<=0)
+   remaining[next]=state[next]*60;
+  play();
+ }
+ persist();renderTimer();
+}
+setInterval(()=>{
+ if(!state.running)return;
+ remaining[state.selected]=Math.max(0,
+  (deadline-Date.now())/1000);
+ if(remaining[state.selected]<=0)phaseComplete();
+ else renderTimer();
+},200);
+$("playBtn").onclick=()=>{
+ if(state.running)pause();else play();
+};
+$("resetBtn").onclick=()=>{
+ pause();
+ remaining[state.selected]=state[state.selected]*60;
+ renderTimer();
+};
+function resetPreset(){
+ pause();
+ state.focus=state.presetFocus;
+ state.break=state.presetBreak;
+ remaining.focus=state.focus*60;
+ remaining.break=state.break*60;
+ state.selected="focus";
+ persist();renderTimer();
+}
+let presetTimer=null,presetLong=false;
+$("presetBtn").addEventListener("pointerdown",()=>{
+ presetLong=false;
+ presetTimer=setTimeout(()=>{
+  presetLong=true;
+  $("presetFocus").value=state.presetFocus;
+  $("presetBreak").value=state.presetBreak;
+  $("presetModal").classList.add("open");
+ },650);
+});
+["pointerup","pointercancel","pointerleave"].forEach(type=>{
+ $("presetBtn").addEventListener(type,
+  ()=>clearTimeout(presetTimer));
+});
+$("presetBtn").onclick=()=>{
+ if(!presetLong)resetPreset();
+};
+$("savePreset").onclick=()=>{
+ state.presetFocus=Math.max(1,Math.min(180,
+  Number($("presetFocus").value)||25));
+ state.presetBreak=Math.max(1,Math.min(180,
+  Number($("presetBreak").value)||5));
+ $("presetModal").classList.remove("open");
+ resetPreset();
+};
+$("cancelPreset").onclick=()=>
+ $("presetModal").classList.remove("open");
+
+// Clockwise dial: one revolution = 60 minutes.
+// Dragging accumulates rotation, allowing up to 180 minutes.
+const knob=$("knob");
+let dragging=false,lastAngle=null,dragDegrees=0;
+function pointerAngle(e){
+ const r=knob.getBoundingClientRect();
+ return Math.atan2(
+  e.clientY-(r.top+r.height/2),
+  e.clientX-(r.left+r.width/2)
+ )*180/Math.PI;
+}
+knob.addEventListener("pointerdown",e=>{
+ dragging=true;
+ lastAngle=pointerAngle(e);
+ dragDegrees=0;
+ knob.setPointerCapture(e.pointerId);
+});
+knob.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ const angle=pointerAngle(e);
+ let delta=angle-lastAngle;
+ if(delta>180)delta-=360;
+ if(delta< -180)delta+=360;
+ lastAngle=angle;
+ dragDegrees+=delta;
+ const minuteDelta=Math.trunc(dragDegrees/6);
+ if(!minuteDelta)return;
+ dragDegrees-=minuteDelta*6;
+ pause();
+ const key=state.selected;
+ const next=Math.max(1,Math.min(180,
+  state[key]+minuteDelta));
+ state[key]=next;
+ remaining[key]=next*60;
+ persist();renderTimer();
+});
+knob.addEventListener("pointerup",()=>dragging=false);
+knob.addEventListener("pointercancel",()=>dragging=false);
+knob.addEventListener("wheel",e=>{
+ e.preventDefault();pause();
+ const key=state.selected;
+ state[key]=Math.max(1,Math.min(180,
+  state[key]+(e.deltaY<0?1:-1)));
+ remaining[key]=state[key]*60;
+ persist();renderTimer();
+},{passive:false});
+
+function swapPanels(){
+ state.reversed=!state.reversed;
+ $("app").classList.toggle("reversed",state.reversed);
+ persist();
+}
+$("swapBtn").onclick=swapPanels;
+
+const finishes={
+ gray:["#555d62",false],
+ oak:["#c6a77e",true],
+ maple:["#d9bb91",true],
+ walnut:["#76513b",true],
+ mahogany:["#663c35",true],
+ ebony:["#282626",true]
+};
+function applyTheme(){
+ const root=document.documentElement;
+ const chosen=finishes[state.finish]||
+  [state.customCase,false];
+ root.style.setProperty("--case",chosen[0]);
+ const grain=chosen[1]?
+  "repeating-linear-gradient(2deg,"+
+  "transparent 0px,transparent 10px,"+
+  "#39261718 11px,#24170d25 12px,"+
+  "transparent 15px,transparent 27px),"+
+  "linear-gradient(175deg,#ffffff20,transparent 60%,#00000030)"
+  :"none";
+ root.style.setProperty("--grain",grain);
+ let metal=state.metal;
+ if(metal==="auto"){
+  metal=state.finish==="gray"?"silver":
+   ["walnut","mahogany","ebony"].includes(state.finish)?
+   "dark":"silver";
+ }
+ const metals={
+  silver:"#bdc8ca",dark:"#747c80",
+  black:"#252a2d",orange:"#f47d60"
+ };
+ root.style.setProperty("--metal",metals[metal]);
+ root.style.setProperty("--accent",state.accent);
+}
+function updateSettings(){
+ $("finishSelect").value=state.finish;
+ $("metalSelect").value=state.metal;
+ $("accentColor").value=state.accent;
+ $("caseColor").value=state.customCase;
+ $("unitSelect").value=state.units;
+ $("repeatCheck").checked=state.repeat;
+}
+$("settingsBtn").onclick=()=>{
+ updateSettings();
+ $("settingsModal").classList.add("open");
+};
+$("closeSettings").onclick=()=>
+ $("settingsModal").classList.remove("open");
+$("finishSelect").onchange=e=>{
+ state.finish=e.target.value;
+ if(state.finish==="gray"){
+  state.metal="auto";
+  state.accent="#f47d60";
+ }
+ updateSettings();applyTheme();persist();
+};
+$("metalSelect").onchange=e=>{
+ state.metal=e.target.value;applyTheme();persist();
+};
+$("accentColor").oninput=e=>{
+ state.accent=e.target.value;applyTheme();persist();
+};
+$("caseColor").oninput=e=>{
+ state.customCase=e.target.value;
+ state.finish="custom";
+ $("finishSelect").value="custom";
+ applyTheme();persist();
+};
+$("unitSelect").onchange=e=>{
+ state.units=e.target.value;persist();renderWeather();
+};
+$("repeatCheck").onchange=e=>{
+ state.repeat=e.target.checked;persist();
+};
+
+function updateClock(){
+ const now=new Date();
+ const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+ $("dateText").textContent=days[now.getDay()]+" "+
+  String(now.getMonth()+1).padStart(2,"0")+"/"+
+  String(now.getDate()).padStart(2,"0");
+ let hour=now.getHours();
+ const ampm=hour>=12?"PM":"AM";
+ hour=hour%12||12;
+ $("clockText").innerHTML=hour+":"+
+  String(now.getMinutes()).padStart(2,"0")+
+  ' <span class="ampm">'+ampm+"</span>";
+}
+setInterval(updateClock,10000);
+
+function formatTemp(c){
+ if(c===null||c===undefined)return "--";
+ const f=Math.round(c*9/5+32),cc=Math.round(c);
+ if(state.units==="f")return f+"°F";
+ if(state.units==="c")return cc+"°C";
+ return f+"°F ("+cc+"°C)";
+}
+function weatherDescription(code){
+ if(code===0)return ["☀️","Clear"];
+ if(code<=2)return ["🌤️","Partly cloudy"];
+ if(code===3)return ["☁️","Cloudy"];
+ if(code<=48)return ["🌫️","Fog"];
+ if(code<=67)return ["🌧️","Rain"];
+ if(code<=77)return ["❄️","Snow"];
+ if(code<=82)return ["🌦️","Showers"];
+ if(code<=86)return ["🌨️","Snow showers"];
+ if(code>=95)return ["⛈️","Thunderstorms"];
+ return ["☁️","Cloudy"];
+}
+function selectedLocation(){
+ if(state.locationIndex===0)return {
+  name:"Current Location",current:true
+ };
+ return state.locations[state.locationIndex-1]||
+  {name:"Current Location",current:true};
+}
+async function coordinates(){
+ const loc=selectedLocation();
+ if(!loc.current)return loc;
+ return new Promise((resolve,reject)=>{
+  if(!navigator.geolocation){
+   reject(new Error("Location unavailable"));return;
+  }
+  navigator.geolocation.getCurrentPosition(
+   p=>resolve({
+    latitude:p.coords.latitude,
+    longitude:p.coords.longitude
+   }),
+   ()=>reject(new Error("Allow location access in Safari")),
+   {enableHighAccuracy:false,timeout:12000,maximumAge:600000}
+  );
+ });
+}
+async function fetchWeather(){
+ const loc=selectedLocation();
+ $("locationName").textContent=loc.name;
+ $("currentTemp").textContent="Loading…";
+ $("condition").textContent="";
+ try{
+  const pos=await coordinates();
+  const url="https://api.open-meteo.com/v1/forecast?"+
+   "latitude="+encodeURIComponent(pos.latitude)+
+   "&longitude="+encodeURIComponent(pos.longitude)+
+   "&current=temperature_2m,weather_code"+
+   "&daily=temperature_2m_max,temperature_2m_min"+
+   "&temperature_unit=celsius&timezone=auto&forecast_days=1";
+  const response=await fetch(url);
+  if(!response.ok)throw new Error("Weather unavailable");
+  const data=await response.json();
+  weatherCache[loc.name]=data;
+  lastWeatherFetch=Date.now();
+  renderWeather();
+ }catch(e){
+  $("currentTemp").textContent="Unavailable";
+  $("condition").textContent=e.message;
+  $("lowTemp").textContent="--";
+  $("highTemp").textContent="--";
+  $("updatedText").textContent="";
+ }
+}
+function renderWeather(){
+ const loc=selectedLocation();
+ $("locationName").textContent=loc.name;
+ const data=weatherCache[loc.name];
+ if(!data)return;
+ const desc=weatherDescription(data.current.weather_code);
+ $("weatherIcon").textContent=desc[0];
+ $("condition").textContent=desc[1];
+ $("currentTemp").textContent=
+  formatTemp(data.current.temperature_2m);
+ $("lowTemp").textContent=
+  formatTemp(data.daily.temperature_2m_min[0]);
+ $("highTemp").textContent=
+  formatTemp(data.daily.temperature_2m_max[0]);
+ $("updatedText").textContent="Today's forecast";
+}
+function changeLocation(delta){
+ const total=state.locations.length+1;
+ state.locationIndex=(state.locationIndex+delta+total)%total;
+ persist();fetchWeather();
+}
+$("prevLocation").onclick=()=>changeLocation(-1);
+$("nextLocation").onclick=()=>changeLocation(1);
+$("addLocation").onclick=()=>{
+ $("locationMessage").textContent="";
+ $("locationModal").classList.add("open");
+};
+$("closeLocation").onclick=()=>
+ $("locationModal").classList.remove("open");
+$("saveLocation").onclick=async()=>{
+ const name=$("cityInput").value.trim();
+ if(!name)return;
+ $("locationMessage").textContent="Searching…";
+ try{
+  const url="https://geocoding-api.open-meteo.com/v1/search?"+
+   "name="+encodeURIComponent(name)+
+   "&count=1&language=en&format=json";
+  const response=await fetch(url);
+  const data=await response.json();
+  if(!data.results?.length)throw new Error("City not found");
+  const city=data.results[0];
+  const item={
+   name:city.name+
+    (city.admin1?", "+city.admin1:"")+
+    (city.country?", "+city.country:""),
+   latitude:city.latitude,longitude:city.longitude
+  };
+  state.locations.push(item);
+  state.locationIndex=state.locations.length;
+  $("locationModal").classList.remove("open");
+  $("cityInput").value="";
+  persist();fetchWeather();
+ }catch(e){
+  $("locationMessage").textContent=e.message;
+ }
+};
+$("removeLocation").onclick=()=>{
+ if(state.locationIndex===0){
+  $("locationMessage").textContent=
+   "Current Location cannot be removed.";
+  return;
+ }
+ state.locations.splice(state.locationIndex-1,1);
+ state.locationIndex=0;
+ persist();
+ $("locationModal").classList.remove("open");
+ fetchWeather();
+};
+setInterval(()=>{
+ if(Date.now()-lastWeatherFetch>20*60*1000)
+  fetchWeather();
+},60000);
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden){
+  updateClock();
+  if(state.running){
+   remaining[state.selected]=Math.max(0,
+    (deadline-Date.now())/1000);
+   if(remaining[state.selected]===0)phaseComplete();
+   else renderTimer();
+  }
+  if(Date.now()-lastWeatherFetch>20*60*1000)
+   fetchWeather();
+ }
+});
+$("app").classList.toggle("reversed",state.reversed);
+applyTheme();
+updateClock();
+renderTimer();
+fetchWeather();
+</script>
+</body>
+</html>
